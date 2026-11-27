@@ -1,0 +1,140 @@
+---
+title: Components
+description: What each release the helmfile installs does, how to bring your own, and how to check it.
+sidebar:
+  label: Components
+---
+
+servtuner 0.1's helmfile installs five releases, each on its own: no subcharts and no umbrella chart. You add two more pieces with short manifests, an issuer and a Gateway ([Kubernetes](/deployment/helm/), step 4). Every helmfile release but servtuner can be turned off with an `install.*` switch when your cluster already runs it. A component you bring yourself, such as your own issuer, Gateway or Ingress controller, is yours to run; this page lists what servtuner needs from it.
+
+| Release                 | Namespace              | What it is                             | Switch                 |
+| ----------------------- | ---------------------- | -------------------------------------- | ---------------------- |
+| `cert-manager`          | `cert-manager`         | Issues certificates                    | `install.certManager`  |
+| servtuner's issuer      | `cert-manager`         | servtuner's private CA, `servtuner-ca` | you apply it (step 4)  |
+| `cnpg`                  | `cnpg-system`          | The CloudNativePG operator             | `install.cnpg`         |
+| `envoy-gateway`         | `envoy-gateway-system` | The Envoy Gateway controller           | `install.envoyGateway` |
+| servtuner's Gateway     | `servtuner`            | A GatewayClass and Gateway             | you apply it (step 4)  |
+| `kube-prometheus-stack` | `monitoring`           | Prometheus and its Operator            | `install.prometheus`   |
+| `servtuner`             | `servtuner`            | servtuner itself                       | (always)               |
+
+Turn components off at install time, for example `--state-values-set install.certManager=false,install.prometheus=false`. The versions are pinned in `deploy/helmfile/env/common.yaml`, and each upstream chart's values are in `deploy/helmfile/values/`.
+
+## cert-manager
+
+**What servtuner uses it for.** Every servtuner component has one certificate, and cert-manager issues and renews them.
+
+**What the helmfile installs.** The upstream `jetstack/cert-manager` chart, with its CRDs.
+
+**Bring your own.** Set `install.certManager=false`. servtuner needs cert-manager's `cert-manager.io/v1` CRDs. Without cert-manager at all, set `tls.source: secret` and name a `kubernetes.io/tls` Secret for each component (see [transport security](/deployment/transport-security/)).
+
+**Check it.**
+
+```sh
+kubectl -n cert-manager get pods
+```
+
+## servtuner's issuer
+
+**What servtuner uses it for.** The `servtuner-ca` ClusterIssuer signs servtuner's own certificates. servtuner's connections are internal, so a private CA is the right default: a public CA cannot issue for `*.svc` names.
+
+**How to add it.** `servtuner-issuer.yaml` in [Kubernetes](/deployment/helm/), step 4: a self-signed root, the CA certificate made from it, and the `servtuner-ca` ClusterIssuer. Your site values point `tls.certManager.issuerRef` at it.
+
+**Bring your own.** Skip that manifest and name yours in your site values:
+
+```yaml title="deploy/site-values.yaml"
+tls:
+  certManager:
+    issuerRef: { kind: ClusterIssuer, name: your-issuer }
+```
+
+Your issuer must put `ca.crt` into the Secrets it issues, as a CA issuer does, because servtuner's components verify each other with it. An ACME issuer does not.
+
+**Check it.**
+
+```sh
+kubectl get clusterissuer servtuner-ca     # READY True
+kubectl -n servtuner get certificates      # every one READY True after the install
+```
+
+## CloudNativePG
+
+**What servtuner uses it for.** servtuner stores runs, users and settings in Postgres. Its chart creates a CloudNativePG `Cluster`, and the operator runs it.
+
+**What the helmfile installs.** The upstream `cnpg/cloudnative-pg` operator chart. The servtuner chart pins the Postgres image, so a release carries it.
+
+**Bring your own.** Set `install.cnpg=false` to use an operator you run, which needs the `postgresql.cnpg.io/v1` CRDs. To use a Postgres you run instead, set `postgres.mode: external` and its host. With `mtls` the API signs in with its client certificate, whose common name is the database user; on a `platform` postgres hop it uses `postgres.external.passwordSecretRef`.
+
+**Check it.**
+
+```sh
+kubectl -n cnpg-system get pods
+kubectl -n servtuner get cluster           # STATUS "Cluster in healthy state"
+```
+
+## Envoy Gateway
+
+**What servtuner uses it for.** It serves servtuner's routes, the UI and the API under `<basePath>/api`, from one hostname. With TLS, an Envoy `Backend` presents the gateway's client certificate to the API, and a `BackendTLSPolicy` checks the API's name.
+
+**What the helmfile installs.** The upstream `envoyproxy/gateway-helm` chart, with the Backend API enabled (`config.envoyGateway.extensionApis.enableBackend: true`).
+
+**Bring your own.** Set `install.envoyGateway=false`. With `mtls`, servtuner's API route needs Envoy Gateway with the Backend API enabled. To use an Ingress controller instead, set `gateway.enabled: false` and `ingress.enabled: true` (the chart renders ingress-nginx Ingresses). Running and configuring your own controller is up to you.
+
+**Check it.**
+
+```sh
+kubectl -n envoy-gateway-system get pods
+```
+
+## servtuner's Gateway
+
+**What servtuner uses it for.** The Gateway that servtuner's HTTPRoutes attach to.
+
+**How to add it.** `servtuner-gateway.yaml` in [Kubernetes](/deployment/helm/), step 4: a `servtuner` GatewayClass and a `servtuner` Gateway in servtuner's namespace, listening for plain HTTP on port 80, with a ClusterIP Service on clusters without a load balancer. Your site values set `gateway.enabled`, `gateway.parentRefs: [{ name: servtuner }]` and the hostname.
+
+Terminate browser TLS in front of the Gateway, or add an HTTPS listener with your certificate to the Gateway manifest.
+
+**Bring your own.** Skip that manifest and name your Gateway:
+
+```yaml title="deploy/site-values.yaml"
+gateway:
+  enabled: true
+  hostname: servtuner.example.internal
+  parentRefs:
+    - { name: your-gateway, namespace: your-namespace }
+```
+
+If your GatewayClass names its own `EnvoyProxy`, give it `mergeType: StrategicMerge`. Otherwise it replaces Envoy Gateway's default proxy settings, including the registry the proxy image comes from.
+
+**Check it.**
+
+```sh
+kubectl -n servtuner get gateway servtuner          # PROGRAMMED True
+kubectl -n servtuner get httproute                  # servtuner-api and servtuner-frontend
+kubectl -n envoy-gateway-system get svc -l gateway.envoyproxy.io/owning-gateway-name=servtuner
+```
+
+## kube-prometheus-stack
+
+**What servtuner uses it for.** Server-side metrics explain what the client measured: queueing, KV cache, router overhead and resource use. servtuner queries Prometheus for each run's window. Managed vLLM targets are found by `PodMonitor`s, which need the Prometheus Operator.
+
+**What the helmfile installs.** The upstream `prometheus-community/kube-prometheus-stack` chart, with the values in `deploy/helmfile/values/kube-prometheus-stack.yaml.gotmpl`. servtuner's `prometheus.url` points at it.
+
+**Bring your own.** Set `install.prometheus=false` and set `prometheus.url` to yours in your site values. Without the Prometheus Operator, set `tuning.monitor: scrape-annotations` (see [Prometheus](/deployment/prometheus/)).
+
+**Check it.**
+
+```sh
+kubectl -n monitoring get pods
+```
+
+## servtuner
+
+**What the helmfile installs.** The servtuner chart from the deploy bundle, with the environment's values, then your `deploy/site-values.yaml` (on kind, `deploy/helmfile/kind-values.yaml`).
+
+**Check it.**
+
+```sh
+kubectl -n servtuner get pods                       # api, frontend and Postgres Running
+```
+
+Then open servtuner and create the first admin.
