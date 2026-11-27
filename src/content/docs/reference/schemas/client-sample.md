@@ -8,7 +8,7 @@ editUrl: false
 
 One row of client/samples: self-monitoring of the load generator or the TLS relay, once a second, input to the client\_bound check.
 
-Schema file: `schema/json/bundle/client-sample.schema.json`. Generated from servtuner commit `ea52778da279`.
+Schema file: `schema/json/bundle/client-sample.schema.json`. Generated from servtuner commit `049c80278666`.
 
 ## Top level
 
