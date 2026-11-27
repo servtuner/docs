@@ -1,0 +1,67 @@
+name: Documentation issue
+description: A mistake, a gap or a broken example on docs.servtuner.dev.
+labels: [documentation]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve the documentation. If servtuner itself behaves wrongly, open a
+        [bug report](https://github.com/servtuner/servtuner/issues/new?template=bug_report.yml) instead.
+
+  - type: input
+    id: page
+    attributes:
+      label: Page
+      description: The address of the page, with the section anchor if there is one.
+      placeholder: https://docs.servtuner.dev/concepts/workloads/#shared-prefixes
+    validations:
+      required: true
+
+  - type: dropdown
+    id: version
+    attributes:
+      label: Documentation version
+      description: Shown in the version picker at the top of the page.
+      options:
+        - Latest release (/)
+        - Unreleased (/next/)
+        - An older release (/vX.Y/)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: What is wrong
+      options:
+        - Incorrect or out of date
+        - Missing information
+        - Unclear or hard to follow
+        - Example or command does not work
+        - Broken link or image
+        - Display problem (layout, theme, search)
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Details
+      description: What the page says, and what is actually true or what is missing. For a failing example, include the command and its output.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggestion
+    attributes:
+      label: Suggested change
+      description: The wording or example you would expect, if you have one.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checks
+      options:
+        - label: I searched the existing issues and this is not a duplicate.
+          required: true
+        - label: I would be willing to open a pull request for this.

@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Bug in servtuner
+    url: https://github.com/servtuner/servtuner/issues/new?template=bug_report.yml
+    about: servtuner itself does not work as documented.
+  - name: Feature request
+    url: https://github.com/servtuner/servtuner/issues/new?template=feature_request.yml
+    about: Suggest a new capability for servtuner.
+  - name: Security vulnerability
+    url: https://github.com/servtuner/servtuner/security/advisories/new
+    about: Report security problems privately, never in a public issue.
