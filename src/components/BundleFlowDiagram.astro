@@ -1,0 +1,27 @@
+---
+import Diagram from './Diagram.astro';
+---
+
+<Diagram
+  id="bundle"
+  title="Run bundle flow"
+  width={760}
+  height={330}
+  desc="Raw inputs, which are the spec, target snapshots, request records and Prometheus series, are written first. Bench analyze derives the analysis, recommendations, capacity and charts from them. Compare, plan and propose read the derived files."
+  caption="Raw files are the source of truth. Rerun servtuner analyze to rebuild everything derived from them."
+  boxes={[
+    { x: 10, y: 20, w: 180, title: 'Spec and environment', lines: ['what was asked and used'] },
+    { x: 10, y: 95, w: 180, title: 'Target snapshots', lines: ['before and after load'] },
+    { x: 10, y: 170, w: 180, title: 'requests.parquet', lines: ['one row per request'] },
+    { x: 10, y: 245, w: 180, title: 'prometheus/', lines: ['raw range results'] },
+    { x: 290, y: 130, w: 160, h: 64, title: 'servtuner analyze', lines: ['recomputable'], hot: true },
+    { x: 550, y: 10, w: 200, title: 'analysis.json', lines: ['quality, stages, SLO-max'] },
+    { x: 550, y: 85, w: 200, title: 'recommendations.json', lines: ['values, evidence, patches'] },
+    { x: 550, y: 160, w: 200, title: 'capacity model and table', lines: ['used by compare and plan'] },
+    { x: 550, y: 235, w: 200, title: 'charts/', lines: ['what the UI draws'] },
+  ]}
+  arrows={[
+    ...[48, 123, 198, 273].map((y) => ({ d: `M190 ${y}C245 ${y} 235 162 288 162` })),
+    ...[38, 113, 188, 263].map((y) => ({ d: `M450 162C505 162 495 ${y} 548 ${y}` })),
+  ]}
+/>

@@ -1,0 +1,33 @@
+---
+title: Reference
+description: Generated reference for the CLI, API, RunSpec, schemas, chart and configuration.
+sidebar:
+  label: Overview
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+import meta from '../../../data/servtuner/meta.json';
+
+<p>
+  Generated from servtuner commit <code>{meta.sha}</code>, dated {meta.committed.slice(0, 10)}.
+</p>
+
+<CardGrid>
+  <LinkCard title="CLI" href="/reference/cli/" description="Commands, flags and exit codes." />
+  <LinkCard title="API" href="/reference/api/runs/" description="Endpoints, parameters and models." />
+  <LinkCard title="RunSpec" href="/reference/runspec/" description="Every field of a benchmark." />
+  <LinkCard title="Bundle files" href="/reference/bundle-files/" description="What each file in a run contains." />
+  <LinkCard title="Schemas" href="/reference/schemas/" description="Every published JSON Schema." />
+  <LinkCard title="Helm values" href="/reference/helm-values/" description="Chart values and defaults." />
+  <LinkCard
+    title="Configuration"
+    href="/reference/configuration/"
+    description="Environment variables and directories."
+  />
+</CardGrid>
+
+## API conventions
+
+The API speaks JSON. When served by the chart's ingress it is under `<basePath>/api`. Set `<base>` to the API's address and fetch the OpenAPI document from `<base>/openapi.json`.
+
+Every request needs a signed-in user: a session from `POST /auth/login` (the `__Host-servtuner_session` cookie), or an identity named by a trusted proxy. The user's role decides which requests succeed; see [authentication](/deployment/authentication/). In `mtls` mode the listener also requires a client certificate. Posting run events requires the run's own token. With `auth.mode: none`, nothing is checked.

@@ -1,0 +1,70 @@
+---
+title: Save and check targets
+description: Save target definitions, store write-only credentials and test a connection before a run.
+sidebar:
+  label: Save and check
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+Save a target once, then use it in New run. A connection check tells you whether a run could resolve, reach, authenticate to and observe it.
+
+## Prerequisites
+
+- A running control plane.
+- For stored keys, `secretStore: kubernetes`, or `SERVTUNER_SECRET_STORE=file` for local development.
+
+## Choose a target type
+
+| Type                                                      | Server metrics | Advisor       | Credential slots   |
+| --------------------------------------------------------- | -------------- | ------------- | ------------------ |
+| [`vllm`](/guides/targets/vllm/)                           | Yes            | vLLM rules    | `api_key`          |
+| [`litellm`](/guides/targets/litellm/)                     | Yes            | LiteLLM rules | `api_key`          |
+| [`bifrost`](/guides/targets/bifrost/)                     | Yes            | Bifrost rules | `api_key`, `admin` |
+| [`openai-compatible`](/guides/targets/openai-compatible/) | No catalog     | None          | `api_key`          |
+
+## Steps
+
+<Steps>
+
+1. Open **Targets**, add a target, and enter its endpoint, model and transport mode.
+2. Set a key if the target needs one. Keys have their own action and are never sent with the form.
+3. Select **Check connection**. Optionally send one real generation request.
+4. Fix each failed check, using its message.
+5. Choose the target in **New run**. servtuner copies its block into the RunSpec.
+
+</Steps>
+
+Or use the API. The credential request returns `204` with no body.
+
+{/* schema: openapi:TargetCreate */}
+
+```json title="POST /targets"
+{
+  "name": "demo-gateway",
+  "target": {
+    "type": "openai-compatible",
+    "endpoint": "http://gateway.example.svc:8000/v1",
+    "model": "example-model",
+    "tls": { "mode": "platform" }
+  }
+}
+```
+
+## What the check covers
+
+`resolve`, `connect`, `tls`, `auth`, `model`, `generate` (only when you ask), `metrics`, `gpu_metrics` and `workload`. A failure skips the checks that depend on it. Each result is `ok`, `warning`, `failed` or `skipped`.
+
+The check runs in the API's environment. With the Kubernetes runner, the run itself uses a Job pod that can sit behind different network policies.
+
+## Verify
+
+The saved target shows its last check. No API response contains a key. You see only a masked preview and where the key lives.
+
+:::caution
+Operators can run benchmarks with a saved key, and only admins can replace or clear it. Nobody can read it back. With `auth.mode: none`, anyone who can reach servtuner can do both. See [roles](/deployment/authentication/#roles).
+:::
+
+## Next steps
+
+Follow the guide for your target type, then write a [RunSpec](/guides/runspecs/). Editing or deleting a saved target never changes past runs.

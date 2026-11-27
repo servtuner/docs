@@ -1,0 +1,85 @@
+---
+title: Write a RunSpec
+description: Describe the target, workload, load, SLOs and metrics of a benchmark.
+---
+
+A RunSpec is YAML or JSON. servtuner stores it exactly as submitted, plus a resolved copy with defaults filled in.
+
+## Prerequisites
+
+- A target you can reach. See [targets](/guides/targets/).
+- The `servtuner` CLI, or a running control plane.
+
+## Steps
+
+### 1. Start with the required fields
+
+{/* schema: runspec */}
+
+```yaml title="run.yaml"
+apiVersion: servtuner.dev/v1
+kind: RunSpec
+name: example-run
+target:
+  type: openai-compatible
+  endpoint: http://localhost:18000/v1
+  model: mock-model
+  tls: { mode: platform }
+engine: { type: loadgen }
+workload:
+  streaming: true
+  dataset:
+    type: synthetic
+    input_tokens: { mean: 128 }
+    output_tokens: { mean: 32 }
+load:
+  stages:
+    - { rate: 10, duration: 60s }
+```
+
+`target.tls` and `workload.streaming` are required. servtuner never infers either.
+
+### 2. Shape the workload
+
+| Field                                   | Effect                                                                                |
+| --------------------------------------- | ------------------------------------------------------------------------------------- |
+| `dataset.input_tokens`, `output_tokens` | Mean and standard deviation of the synthetic lengths                                  |
+| `dataset.shared_prefix`                 | Prompts share one of a fixed number of prefixes, to exercise prefix caches            |
+| `dataset.padding_bytes`                 | Extra payload per request                                                             |
+| `conversation`                          | Multi-turn chat with growing history. Chat and loadgen only                           |
+| `preset`                                | A [named workload](/guides/workload-presets/) instead of `dataset` and `conversation` |
+| `seed`                                  | Makes the generated requests repeatable                                               |
+
+### 3. Shape the load
+
+Each stage offers a rate for a duration. `pacing` is `constant`, `poisson`, `linear` or `sine`. Use `poisson` when you want random arrivals. Warmup defaults to 30 seconds and stays out of summaries.
+
+Make a stage long enough. Let _I_ be the slowest relevant scrape interval:
+
+```text
+stage >= max(10 x I, 60s, requests needed / RPS, 10 x mean E2E)
+```
+
+p95 needs 200 requests and p99 needs 1,000. At 5 RPS, a p99 stage therefore needs 200 seconds.
+
+### 4. Add SLOs and metrics
+
+Set any of `ttft_p95`, `itl_p95`, `e2e_p95` and `max_error_rate`. Add `prometheus` to explain results and size resources. Catalogs follow the target type. Optional ones such as `dcgm` are collected only when found.
+
+### 5. Group runs
+
+Set `experiment` and `knobs` when you compare configurations. Add `labels` to filter the runs list.
+
+## Verify
+
+```sh
+servtuner validate --spec run.yaml
+```
+
+It exits 0 when valid and 2 when not, listing every problem. Warnings do not fail it unless you pass `--strict`.
+
+You can also use **Validate** in New run. It calls the same rules.
+
+## Next steps
+
+See [every field](/reference/runspec/), set [SLOs](/guides/slos-and-capacity/), or use a [preset](/guides/workload-presets/).

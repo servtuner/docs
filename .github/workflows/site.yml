@@ -1,0 +1,65 @@
+name: Site
+
+# Checks every push and pull request, and publishes docs.servtuner.dev from main and the release branches.
+# The published site has every version (scripts/build-site.mjs): the latest stable servtuner release at /, each
+# release line at /vX.Y/ (its docs branch), and main at /next/. Pushing main or any v* branch rebuilds all of them.
+# A deploy triggered by a v* branch needs that branch allowed in the github-pages environment's deployment branches.
+on:
+  pull_request:
+  push:
+    branches: [main, 'v*']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      - run: npm run build
+      - run: npm run check:site
+      - run: npm run check:browser
+
+  build-site:
+    if: github.event_name != 'pull_request'
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main # main's scripts assemble the site, whichever branch triggered it
+          fetch-depth: 0 # every docs branch: each is a version
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      # The versions come from servtuner's stable release tags (vX.Y.Z only), never from its main branch.
+      - run: node scripts/build-site.mjs https://github.com/servtuner/servtuner --checks
+      - uses: actions/upload-pages-artifact@v5
+        with:
+          path: site
+
+  deploy:
+    needs: build-site
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    concurrency:
+      group: pages
+      cancel-in-progress: false
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v5

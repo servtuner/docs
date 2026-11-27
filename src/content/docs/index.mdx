@@ -1,0 +1,105 @@
+---
+title: servtuner documentation
+description: Benchmark, compare and size LLM serving stacks on Kubernetes.
+template: splash
+hero:
+  tagline: Load test vLLM, LiteLLM, Bifrost and other OpenAI-compatible servers. Keep every measurement, compare configurations and size each deployment from evidence.
+  actions:
+    - text: Run your first benchmark
+      link: /quickstart/first-run/
+      icon: right-arrow
+    - text: What is servtuner?
+      link: /overview/what-is-servtuner/
+      variant: minimal
+---
+
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+## Get started
+
+<CardGrid>
+  <LinkCard
+    title="First run"
+    href="/quickstart/first-run/"
+    description="Benchmark a mock server from one machine, with no cluster."
+  />
+  <LinkCard
+    title="Read the results"
+    href="/quickstart/read-results/"
+    description="Find the quality grade, SLO-max and recommendations."
+  />
+  <LinkCard
+    title="Architecture"
+    href="/overview/architecture/"
+    description="See how the API, bench, targets and bundles fit together."
+  />
+  <LinkCard
+    title="Install on Kubernetes"
+    href="/deployment/helm/"
+    description="servtuner and its prerequisites, each its own Helm release, with or without internet access."
+  />
+</CardGrid>
+
+## Benchmark a target
+
+<CardGrid>
+  <LinkCard
+    title="vLLM"
+    href="/guides/targets/vllm/"
+    description="Measure a model server, its KV cache and its scheduler."
+  />
+  <LinkCard
+    title="LiteLLM"
+    href="/guides/targets/litellm/"
+    description="Measure proxy workers, queueing and retries."
+  />
+  <LinkCard
+    title="Bifrost"
+    href="/guides/targets/bifrost/"
+    description="Size provider concurrency, queues and memory."
+  />
+  <LinkCard
+    title="OpenAI-compatible"
+    href="/guides/targets/openai-compatible/"
+    description="Measure any other server from the client side."
+  />
+</CardGrid>
+
+## Decide what to deploy
+
+<CardGrid>
+  <LinkCard
+    title="Compare experiments"
+    href="/guides/experiments/"
+    description="Rank configurations, with confidence intervals."
+  />
+  <LinkCard
+    title="Size resources"
+    href="/guides/sizing/"
+    description="Turn measured usage into requests, limits and replicas."
+  />
+  <LinkCard
+    title="Plan capacity"
+    href="/guides/planner/"
+    description="Plan replicas for a traffic level and test overrides."
+  />
+  <LinkCard
+    title="Tune vLLM"
+    href="/guides/tuning-sessions/"
+    description="Search vLLM flags and get a recommended command line."
+  />
+  <LinkCard
+    title="Price runs"
+    href="/guides/costs/"
+    description="Rank configurations by infrastructure and token cost."
+  />
+</CardGrid>
+
+## Look it up
+
+<CardGrid>
+  <LinkCard title="CLI" href="/reference/cli/" description="Every servtuner command and flag." />
+  <LinkCard title="REST API" href="/reference/api/runs/" description="Every endpoint, parameter and model." />
+  <LinkCard title="RunSpec" href="/reference/runspec/" description="Every field of a benchmark description." />
+  <LinkCard title="Helm values" href="/reference/helm-values/" description="Every chart value and default." />
+</CardGrid>

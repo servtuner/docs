@@ -1,0 +1,108 @@
+---
+title: First run
+description: Benchmark a mock OpenAI-compatible server with servtuner on one machine.
+---
+
+import { Steps, Tabs, TabItem } from '@astrojs/starlight/components';
+
+Run a three-stage benchmark against the mock server that ships with servtuner. You need no cluster, database, GPU or API key. The load takes three and a half minutes.
+
+## Prerequisites
+
+- A checkout of the servtuner repository: `git clone https://github.com/servtuner/servtuner`.
+- A Go toolchain. The `bench` module selects the version it needs.
+- Port 18000 free.
+
+## Run it
+
+<Steps>
+
+1. Build servtuner and the mock server from the checkout.
+
+   ```sh
+   mkdir -p /tmp/servtuner-quickstart
+   (cd bench && go build -o /tmp/servtuner-quickstart/servtuner ./cmd/servtuner)
+   (cd deploy/mocks/openai-mock && go build -o /tmp/servtuner-quickstart/openai-mock .)
+   cd /tmp/servtuner-quickstart
+   ```
+
+2. Save this RunSpec as `quickstart.yaml`.
+
+   {/* schema: runspec */}
+
+   ```yaml title="quickstart.yaml"
+   apiVersion: servtuner.dev/v1
+   kind: RunSpec
+   name: quickstart
+   target:
+     type: openai-compatible
+     endpoint: http://localhost:18000/v1
+     model: mock-model
+     tls: { mode: platform }
+   engine: { type: loadgen }
+   workload:
+     api: chat
+     streaming: true
+     dataset:
+       type: synthetic
+       input_tokens: { mean: 128 }
+       output_tokens: { mean: 32 }
+   load:
+     warmup: 30s
+     stages:
+       - { rate: 5, duration: 60s }
+       - { rate: 10, duration: 60s }
+       - { rate: 20, duration: 60s }
+   slos: { ttft_p95: 500ms, e2e_p95: 2s }
+   ```
+
+   `platform` means plain HTTP. See [transport security](/deployment/transport-security/) before using it across a network.
+
+3. Validate it.
+
+   ```sh
+   ./servtuner validate --spec quickstart.yaml
+   ```
+
+   ```text title="Output"
+   ok: quickstart.yaml is a valid RunSpec (quickstart)
+   ```
+
+4. Start the mock in a second terminal.
+
+   ```sh
+   cd /tmp/servtuner-quickstart
+   ./openai-mock --tls-mode platform --listen 127.0.0.1:18000
+   ```
+
+5. Run the benchmark.
+
+   ```sh
+   ./servtuner run --spec quickstart.yaml --out ./quickstart-run
+   ```
+
+   The last line reports the run id, its result and the bundle directory.
+
+</Steps>
+
+## Verify
+
+```sh
+ls quickstart-run
+```
+
+The bundle contains `manifest.json`, `requests.parquet`, `analysis.json` and more. It is graded `degraded`, because no Prometheus was configured and the client's CPU had no limit to compare with. Its client-side numbers are still usable.
+
+## Run another way
+
+<Tabs>
+  <TabItem label="From the UI">
+    [Run the control plane locally](/deployment/local/), open **New run**, and paste the RunSpec in the YAML tab.
+  </TabItem>
+  <TabItem label="From the API">Send the RunSpec to [`POST /runs`](/reference/api/runs/).</TabItem>
+  <TabItem label="On Kubernetes">[Install the chart](/deployment/helm/). Each run becomes a Job.</TabItem>
+</Tabs>
+
+## Next steps
+
+[Read the results](/quickstart/read-results/).

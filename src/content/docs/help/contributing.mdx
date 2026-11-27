@@ -1,0 +1,45 @@
+---
+title: Contributing
+description: Develop servtuner and keep this documentation accurate.
+---
+
+## Develop servtuner
+
+The source is at [github.com/servtuner/servtuner](https://github.com/servtuner/servtuner); read its `CONTRIBUTING.md` before you open a pull request. Versions of Go, Python, Node, just and uv are pinned in `.tool-versions`.
+
+| Command                                          | What it does                                         |
+| ------------------------------------------------ | ---------------------------------------------------- |
+| `just setup`                                     | Installs dependencies of every component             |
+| `just gen`                                       | Regenerates types and API documents from the schemas |
+| `just gen-check`                                 | Fails if regeneration changes the tree               |
+| `just lint`                                      | Runs linters and a duplication check                 |
+| `just test`                                      | Runs component tests                                 |
+| `just e2e-local-loadgen`                         | Runs loadgen against the mock                        |
+| `just e2e-local-platform`, `just e2e-local-mtls` | Runs the API and the servtuner CLI end to end        |
+| `just e2e-smoke`                                 | Runs the UI smoke test                               |
+
+### Rules that shape a change
+
+- Change JSON Schema first, then regenerate. Never edit generated files.
+- Keep the API-to-bench contract to a command line and files.
+- Write raw data before summaries.
+- Keep secrets out of RunSpecs, bundles and logs.
+- Test each connection in every transport mode it supports.
+- Put analysis in bench. Do not reimplement it in the API or frontend.
+
+## Report a security problem
+
+Report vulnerabilities privately through [GitHub's private vulnerability reporting](https://github.com/servtuner/servtuner/security/advisories/new), never in a public issue. See the repository's `SECURITY.md`.
+
+## Improve this documentation
+
+The source is at [github.com/servtuner/docs](https://github.com/servtuner/docs).
+
+Reference pages are generated. Change the source schema, help text, chart or API, then sync. Edit every other page by hand.
+
+Before you send a change, run `npm run check` and `npm run build`. The README lists the remaining checks.
+
+- Write in second person, with one idea per sentence.
+- Do not add a feature, number or screenshot you have not verified.
+- Label anything not built or not verified.
+- Use placeholder hosts such as `gateway.example.svc`. Never include private data.

@@ -1,0 +1,121 @@
+---
+title: Run the host launcher
+description: Let servtuner start and stop vLLM on a GPU host outside Kubernetes.
+sidebar:
+  label: Launcher
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+`servtuner launcher` runs on a GPU host outside Kubernetes. It starts, stops and reports on one `vllm serve` process for the API, and reports the host's hardware. It accepts arguments for that fixed executable only, and runs no shell.
+
+## Prerequisites
+
+- A Linux GPU host with a working vLLM.
+- The `servtuner` binary for that host (linux/amd64).
+- A random token, shared with the API as the managed target's launcher credential.
+
+## Configure
+
+Every key matches a flag of the same name, and a flag on the command line wins. Unknown keys are refused.
+
+```yaml title="launcher.yaml"
+listen: 0.0.0.0:9123
+tls_mode: platform # or tls, with tls_cert_file and tls_key_file
+vllm: /opt/vllm/bin/vllm # the executable, when it is not on PATH
+log_dir: /var/lib/servtuner-launcher
+# token_file and api_key_file name files that hold the secrets. Under systemd, leave them unset.
+```
+
+The launcher reads the first of: `--config <file>`, `$SERVTUNER_LAUNCHER_CONFIG`, `$XDG_CONFIG_HOME/servtuner/launcher.yaml` (`~/.config/servtuner/launcher.yaml` by default) and `/etc/servtuner/launcher.yaml`. A file named by `--config` or the variable must exist; the other two are skipped when absent.
+
+The config never holds a secret, only the paths of files that do. Under systemd, the units pass the token and vLLM's API key as systemd credentials (`LoadCredential=`), and the launcher reads them from `$CREDENTIALS_DIRECTORY`, a directory only that service can read.
+
+## Install
+
+The unit files are in the servtuner repository under `deploy/launcher/`. A stop or a reboot stops vLLM first, so the GPU is freed.
+
+<Tabs>
+  <TabItem label="System service">
+
+For a bare-metal host. The service runs as the user `servtuner`.
+
+```sh
+sudo useradd --system --create-home --home-dir /var/lib/servtuner-launcher servtuner
+sudo usermod -aG video,render servtuner   # GPU device access, as your distribution names it
+sudo install -m 0755 servtuner /usr/local/bin/servtuner
+sudo install -d -m 0750 -o root -g servtuner /etc/servtuner
+sudo install -m 0640 -o root -g servtuner launcher.yaml /etc/servtuner/launcher.yaml
+sudo install -m 0600 /dev/stdin /etc/servtuner/launcher-token <<< "<the launcher token>"
+sudo install -m 0644 servtuner-launcher-system.service /etc/systemd/system/servtuner-launcher.service
+sudo systemctl daemon-reload && sudo systemctl enable --now servtuner-launcher
+```
+
+For vLLM's API key, put it in `/etc/servtuner/vllm-api-key` (mode 0600) and uncomment the unit's second `LoadCredential=` line. vLLM's own log is `/var/lib/servtuner-launcher/vllm.log`.
+
+  </TabItem>
+  <TabItem label="User service">
+
+For a workstation or WSL2. Put these files in `~/servtuner-launcher`, each secret file mode 0600 and one line:
+
+- `servtuner`: the binary;
+- `token`: the launcher's bearer token;
+- `vllm-api-key`: vLLM's API key.
+
+Copy the example config to `~/.config/servtuner/launcher.yaml`, with `token_file`, `api_key_file` and `log_dir` under `~/servtuner-launcher`. Then:
+
+```sh
+mkdir -p ~/.config/systemd/user
+cp servtuner-launcher.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now servtuner-launcher
+sudo loginctl enable-linger "$USER"   # keep it running without a login session
+```
+
+  </TabItem>
+</Tabs>
+
+## WSL2
+
+- Turn systemd on: `[boot]` `systemd=true` in `/etc/wsl.conf`, then `wsl --shutdown` once from Windows.
+- WSL starts when Windows logs in, not at boot. For an unattended host, add a Task Scheduler task that runs `wsl.exe -d <distro> --exec /bin/true` at log on.
+- The launcher and vLLM listen inside WSL. Reach them from the network through a Windows port proxy to `127.0.0.1`, **on a different port than the proxy listens on**: WSL forwards a Linux listener by opening the same port on Windows, which fails while the proxy holds it.
+
+```yaml title="~/.config/servtuner/launcher.yaml"
+listen: 127.0.0.1:9124 # the proxy listens on 9123 and forwards here
+```
+
+```powershell title="Administrator PowerShell"
+netsh interface portproxy add v4tov4 listenport=9123 listenaddress=0.0.0.0 connectport=9124 connectaddress=127.0.0.1
+netsh interface portproxy add v4tov4 listenport=8080 listenaddress=0.0.0.0 connectport=8000 connectaddress=127.0.0.1
+```
+
+The managed target then uses port 9123 for the launcher and 8080 for vLLM. Allow both in the Windows firewall. Mirrored networking (`networkingMode=mirrored` in `.wslconfig`) needs no proxies.
+
+## What the API asks of it
+
+| Request             | What it does                                                                        |
+| ------------------- | ----------------------------------------------------------------------------------- |
+| `PUT /vllm`         | Starts vLLM with the target's arguments, replacing a running process                |
+| `GET /vllm`         | Reports whether vLLM is starting, ready or stopped                                  |
+| `DELETE /vllm`      | Stops vLLM and frees the GPU                                                        |
+| `GET /vllm/log`     | The tail of vLLM's log, for the target's log panel                                  |
+| `GET /vllm/version` | The installed vLLM version                                                          |
+| `GET /machine`      | The host's GPUs, CPU and memory, for its [host record](/guides/managed-vllm/#hosts) |
+
+## Security
+
+Every request needs the bearer token. Give vLLM its own API key through `api_key_file` or the credential, so it is neither sent over the network nor visible in its arguments. Limit the launcher port to the API with a firewall. For HTTPS, use `tls_mode: tls` with the launcher's own certificate; the API verifies it and has no skip-verify option.
+
+## Verify
+
+```sh
+systemctl status servtuner-launcher          # --user for the user service
+journalctl -u servtuner-launcher -f
+```
+
+Then use **Check launcher** on the managed target.
+
+## Next steps
+
+Create a [host managed target](/guides/managed-vllm/).

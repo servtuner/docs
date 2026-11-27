@@ -1,0 +1,85 @@
+---
+title: Benchmark LiteLLM
+description: Configure a LiteLLM proxy target and interpret its metrics and advisor rules.
+sidebar:
+  label: LiteLLM
+---
+
+Measure LiteLLM as a router, with a real model server or a mock behind it.
+
+## Prerequisites
+
+- LiteLLM with `litellm_settings.callbacks: ["prometheus"]`.
+- A scrape job that can read `/metrics`. Newer versions require a LiteLLM key there.
+- A key Secret that the run can read.
+
+## Configure the target
+
+{/* schema: runspec */}
+
+```yaml title="litellm.yaml"
+apiVersion: servtuner.dev/v1
+kind: RunSpec
+name: litellm-workers-2
+experiment: litellm-workers
+target:
+  type: litellm
+  endpoint: http://litellm.gateway.svc:4000/v1
+  model: example-model
+  auth:
+    secretRef: { name: litellm-key, key: token }
+  workload:
+    namespace: gateway
+    selector: { app: litellm }
+  upstreams:
+    - name: model-server
+      type: vllm
+      endpoint: http://vllm.inference.svc:8000/v1
+      workload:
+        namespace: inference
+        selector: { app: vllm }
+      tls: { mode: platform }
+  tls: { mode: platform }
+engine: { type: loadgen }
+workload:
+  streaming: true
+  dataset:
+    type: synthetic
+    input_tokens: { mean: 256 }
+    output_tokens: { mean: 64 }
+load:
+  pacing: poisson
+  stages:
+    - { rate: 10, duration: 150s }
+    - { rate: 20, duration: 150s }
+slos: { ttft_p95: 1s, max_error_rate: 0.01 }
+prometheus:
+  url: http://prometheus.monitoring.svc:9090
+  tls: { mode: platform }
+```
+
+Declare every upstream with its own `tls`. servtuner never infers a transport mode.
+
+## Run it
+
+Run the same ladder at each worker count. Apply the worker change to LiteLLM yourself, because servtuner does not reconfigure targets it did not create.
+
+## Read the advisor
+
+| Rule | What it looks for                                                       |
+| ---- | ----------------------------------------------------------------------- |
+| L1   | Queue time rising while each worker uses about one core                 |
+| L2   | Proxy overhead above 10% of mean end-to-end latency, non-streaming only |
+| L3   | More than 1.1 upstream attempts per client request                      |
+| L4   | Errors above 1%, which make server latencies optimistic                 |
+| L5   | CPU-bound proxy                                                         |
+
+LiteLLM's latency histograms count successful requests only. Trust the client-side numbers when there are errors.
+
+## Verify
+
+Check the target, then confirm in Prometheus that its LiteLLM series exist. After the run, the **Server** tab should show LiteLLM charts.
+
+## Next steps
+
+Compare worker counts in an [experiment](/guides/experiments/), and measure two replica counts before you rely on [linear scale-out](/guides/planner/).

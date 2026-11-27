@@ -1,0 +1,73 @@
+---
+title: Bundle files
+description: The purpose and schema of every file in a run bundle.
+---
+
+import { FileTree } from '@astrojs/starlight/components';
+
+Optional files appear only when their input exists.
+
+<FileTree>
+
+- manifest.json
+- spec.yaml
+- spec.resolved.json
+- environment.json
+- phases.json
+- requests.parquet
+- summary.json
+- analysis.json
+- recommendations.json
+- capacity.json
+- capacity.csv
+- capacity_model.json
+- target
+  - snapshot-pre.json
+  - snapshot-post.json
+  - config/ captured configuration
+- prometheus
+  - queries.json
+  - targets.json
+  - … raw series by catalog
+- client
+  - samples.parquet
+- charts
+  - client_timeseries.json
+  - histograms.json
+  - inflight.json
+  - server.json
+- pricing
+  - infra.json
+  - token.json
+- patches
+  - resources.yaml
+- engine/ native engine output
+
+</FileTree>
+
+| File                            | Contents                                             | Schema                                                                 |
+| ------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------------------- |
+| `manifest.json`                 | Status, checksums, versions and timing. Written last | [manifest](/reference/schemas/manifest/)                               |
+| `spec.yaml`                     | The submitted RunSpec, byte for byte                 | [RunSpec](/reference/runspec/)                                         |
+| `spec.resolved.json`            | Defaults and preset expanded                         | [RunSpec](/reference/runspec/)                                         |
+| `environment.json`              | Versions, transport modes and captured knobs         | [environment](/reference/schemas/environment/)                         |
+| `phases.json`                   | Exact UTC windows and warnings                       | [phases](/reference/schemas/phases/)                                   |
+| `requests.parquet`              | One row per request                                  | [request-record](/reference/schemas/request-record/)                   |
+| `client/samples.parquet`        | loadgen self-monitoring                              | [client-sample](/reference/schemas/client-sample/)                     |
+| `target/snapshot-*.json`        | Target state before and after load                   | [target-snapshot](/reference/schemas/target-snapshot/)                 |
+| `prometheus/queries.json`       | Queries and detection results                        | [prometheus-queries](/reference/schemas/prometheus-queries/)           |
+| `prometheus/targets.json`       | Discovered scrape intervals                          | [prometheus-targets](/reference/schemas/prometheus-targets/)           |
+| `summary.json`                  | Per-stage summary                                    | [summary](/reference/schemas/summary/)                                 |
+| `analysis.json`                 | Quality, statistics and capacity                     | [analysis](/reference/schemas/analysis/)                               |
+| `recommendations.json`          | Proposed values and derivations                      | [recommendations](/reference/schemas/recommendations/)                 |
+| `capacity.json`, `capacity.csv` | Replicas by traffic level                            | [capacity](/reference/schemas/capacity/)                               |
+| `capacity_model.json`           | Planner input                                        | [capacity-model](/reference/schemas/capacity-model/)                   |
+| `charts/client_timeseries.json` | Client series                                        | [chart-client-timeseries](/reference/schemas/chart-client-timeseries/) |
+| `charts/histograms.json`        | Distributions                                        | [chart-histograms](/reference/schemas/chart-histograms/)               |
+| `charts/inflight.json`          | Requests in flight                                   | [chart-inflight](/reference/schemas/chart-inflight/)                   |
+| `charts/server.json`            | Server series                                        | [chart-server](/reference/schemas/chart-server/)                       |
+| `pricing/infra.json`            | Infrastructure prices used                           | [infra-pricing](/reference/schemas/infra-pricing/)                     |
+| `pricing/token.json`            | Token prices used                                    | [token-pricing](/reference/schemas/token-pricing/)                     |
+| `patches/*`                     | Changes to review and apply                          |                                                                        |
+
+`servtuner compare`, `servtuner plan` and `servtuner propose` write outside a run bundle. See [comparison](/reference/schemas/comparison/), [plan](/reference/schemas/plan/) and [proposal](/reference/schemas/proposal/).

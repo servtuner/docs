@@ -1,0 +1,48 @@
+---
+title: Glossary
+description: Short definitions of terms used in servtuner.
+---
+
+| Term          | Definition                                                                                |
+| ------------- | ----------------------------------------------------------------------------------------- |
+| Achieved RPS  | The request rate a stage actually delivered                                               |
+| Advisor       | A set of target-specific rules that propose changes                                       |
+| Bench         | The component that runs one benchmark: the `servtuner run` command, as a Job or a process |
+| Bundle        | All files of one run                                                                      |
+| C and B       | Requests served at once, and requests allowed to wait                                     |
+| Catalog       | A set of PromQL queries for one metric source                                             |
+| Client bound  | The load generator was the limit                                                          |
+| Datasheet     | The token-price file an operator supplies to the price book                               |
+| DCGM          | NVIDIA's GPU metrics source, optional in servtuner                                        |
+| E2E           | Time from sending a request to the end of its response                                    |
+| Goodput       | Rate of requests that meet the SLOs                                                       |
+| Hop           | One network connection with a transport mode                                              |
+| Host          | A GPU machine outside Kubernetes, with its hardware and price                             |
+| Infeasible    | A configuration that cannot boot                                                          |
+| ITL           | Time between stream chunks after the first                                                |
+| Knee          | The first stage where headroom starts to disappear                                        |
+| Knob          | A varied setting                                                                          |
+| KV cache      | GPU memory that holds sequence state in a model server                                    |
+| Ladder        | The ordered stages of a load                                                              |
+| Launcher      | `servtuner launcher`: starts and stops vLLM on a host for the API                         |
+| Little's law  | Mean requests in flight equal rate multiplied by mean time                                |
+| Lower bound   | A value that could be higher, because no stage failed                                     |
+| Offered RPS   | The request rate the schedule asked for                                                   |
+| Offline       | An install with no internet access: nothing is fetched from public services               |
+| Open loop     | Sending on schedule without waiting for responses                                         |
+| Pacing        | How arrivals are spaced                                                                   |
+| Pareto set    | Results where no objective improves without hurting another                               |
+| Preset        | A named, versioned workload                                                               |
+| Price book    | The install's prices: hosts, node types, GPUs and the datasheet                           |
+| Role          | Viewer, operator or admin: the actions a user may take                                    |
+| Run           | One execution of a RunSpec                                                                |
+| Runner        | The API component that launches a run: a Job or a local process                           |
+| Send lag      | How late a request was sent                                                               |
+| servtuner CLI | The `servtuner` binary: run, analyze, compare, plan, launcher and more                    |
+| SLO           | A service-level objective                                                                 |
+| SLO-max       | The highest trustworthy rate that meets every SLO                                         |
+| TPOT          | Average time per output token after the first                                             |
+| TTFB          | Time to response headers                                                                  |
+| TTFT          | Time to the first generated token                                                         |
+| ULID          | A sortable unique identifier used for runs                                                |
+| Workload hash | Identity of a request mix                                                                 |

@@ -1,0 +1,66 @@
+---
+title: Schedule regression runs
+description: Run a benchmark on an interval and judge each result against a baseline.
+---
+
+Schedule a RunSpec to catch regressions in SLO-max.
+
+## Prerequisites
+
+- A RunSpec whose ladder brackets SLO-max.
+- A control plane that stays running.
+
+## Steps
+
+1. Open **Schedules** and create one, or call the API.
+2. Choose an interval from 1 to 720 hours, and optionally a baseline run.
+3. Set the tolerance. The default is a 10% drop in SLO-max.
+4. Use **Run now** to test it.
+
+{/* schema: openapi:ScheduleCreate */}
+
+```json title="POST /schedules"
+{
+  "name": "nightly-gateway",
+  "every_hours": 24,
+  "regression_tolerance": 0.1,
+  "spec": {
+    "apiVersion": "servtuner.dev/v1",
+    "kind": "RunSpec",
+    "name": "nightly-gateway",
+    "target": {
+      "type": "openai-compatible",
+      "endpoint": "http://localhost:18000/v1",
+      "model": "mock-model",
+      "tls": { "mode": "platform" }
+    },
+    "engine": { "type": "loadgen" },
+    "workload": {
+      "streaming": true,
+      "dataset": {
+        "type": "synthetic",
+        "input_tokens": { "mean": 128 },
+        "output_tokens": { "mean": 32 }
+      }
+    },
+    "load": { "stages": [{ "rate": 10, "duration": "60s" }] },
+    "slos": { "ttft_p95": "500ms" }
+  }
+}
+```
+
+## How it behaves
+
+- With no baseline, the first successful run with an SLO-max becomes one.
+- A slot is skipped while the schedule's last run is unfinished.
+- Slots missed while the API was down are not replayed.
+- Runs without an SLO-max, or excluded from comparison, are not judged.
+- Deleting a schedule keeps its runs.
+
+## Verify
+
+Open the schedule. Each judged run is marked regressed, steady or improved. Runs carry the label `servtuner.schedule=<id>`.
+
+## Next steps
+
+Investigate a regression by [comparing](/guides/experiments/) the run with its baseline.

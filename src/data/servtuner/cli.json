@@ -1,0 +1,77 @@
+[
+  {
+    "name": "analyze",
+    "short": "Recompute analysis.json from a bundle's raw files",
+    "help": "Recomputes analysis.json (the data quality gate, per-stage client statistics with bootstrap confidence intervals, and the capacity model) from the bundle's raw files only, and writes it into the bundle. The result is validated against its schema before it is written, and running it twice gives the same bytes. Exits 0 on success, 1 when the analysis cannot be computed, 2 for a bad argument or an invalid RunSpec, and 4 when analysis.json cannot be written.\n\nUsage:\n  servtuner analyze <bundle> [flags]\n\nFlags:\n  -h, --help   help for analyze\n"
+  },
+  {
+    "name": "boot-probe",
+    "short": "Read a booted vLLM's KV capacity and print a boot result",
+    "help": "Reads vllm:cache_config_info from the target's /metrics through the TLS and credential code a run uses, and prints a tuningBootResult (boot-results.schema.json) with num_gpu_blocks and c_kv = num_gpu_blocks x block_size / tokens_per_request. The tuning loop feeds it to servtuner propose . Exits 1 when the target cannot be read or serves no cache config, 2 for an invalid request.\n\nUsage:\n  servtuner boot-probe --input <boot-probe-request.json> [flags]\n\nFlags:\n  -h, --help                 help for boot-probe\n      --input string         the probe request (boot-probe-request.schema.json)\n      --secrets-dir string   directory where the Secrets the target names are, one subdirectory per Secret (default: $SERVTUNER_SECRETS_DIR, else /etc/servtuner/secrets)\n"
+  },
+  {
+    "name": "check-target",
+    "short": "Check that a run could reach, authenticate to and observe a target",
+    "help": "Runs the target checks against the request's target with the TLS, credential and Prometheus code a run uses: resolve, connect, tls, auth, model, generate (only when the request asks), metrics, gpu_metrics and workload. Secrets are read from --secrets-dir as servtuner run reads them. Writes check-target-result.json to standard output. Exits 0 whenever the checks ran, whatever they found, and 2 for a bad argument or an invalid request.\n\nUsage:\n  servtuner check-target --input <check-target-request.json> [flags]\n\nFlags:\n  -h, --help                 help for check-target\n      --input string         the check request (check-target-request.schema.json)\n      --kubeconfig string    kubeconfig for reading a workload target's pods (default: in-cluster config; none means that check is a warning)\n      --secrets-dir string   directory where the Secrets the target names are, one subdirectory per Secret (default: $SERVTUNER_SECRETS_DIR, else /etc/servtuner/secrets)\n"
+  },
+  {
+    "name": "compare",
+    "short": "Compare analysed runs: configurations, objectives with intervals, the winner and the Pareto set",
+    "help": "The experiment comparison. Runs with identical declared knobs are repeats of one configuration. Every objective is estimated per configuration, with a Student t interval across repeats or a bootstrap over the pooled request records, and a configuration wins only when its interval clears the runner-up's (with single samples, by more than twice the 5% noise floor). Runs that measured different workloads, ladders or SLOs are not comparable and nothing wins. The bundles must have been analysed. --objective defaults to slo_rps_per_gpu for vllm, slo_rps_per_core for routers and slo_max_rps otherwise. Writes comparison.json to --out, or to standard output. Exits 0 on success, 2 for a bad argument or an invalid document, and 1 when the comparison cannot be computed.\n\nUsage:\n  servtuner compare --bundles <bundle>,<bundle>... [--objective NAME] [flags]\n\nFlags:\n      --bundles strings    analysed bundle directories\n  -h, --help               help for compare\n      --objective string   the primary objective (comparison.schema.json objectiveName)\n      --out string         where to write comparison.json (default: standard output)\n"
+  },
+  {
+    "name": "completion",
+    "short": "Generate the autocompletion script for the specified shell",
+    "help": "Generate the autocompletion script for servtuner for the specified shell.\nSee each sub-command's help for details on how to use the generated script.\n\nUsage:\n  servtuner completion [command]\n\nAvailable Commands:\n  bash        Generate the autocompletion script for bash\n  fish        Generate the autocompletion script for fish\n  powershell  Generate the autocompletion script for powershell\n  zsh         Generate the autocompletion script for zsh\n\nFlags:\n  -h, --help   help for completion\n\nUse \"servtuner completion [command] --help\" for more information about a command.\n"
+  },
+  {
+    "name": "help",
+    "short": "Help about any command",
+    "help": "Help provides help for any command in the application.\nSimply type servtuner help [path to command] for full details.\n\nUsage:\n  servtuner help [command] [flags]\n\nFlags:\n  -h, --help   help for help\n"
+  },
+  {
+    "name": "knobs",
+    "short": "Print every vLLM flag as a knob, with vLLM's own description and limits, as JSON",
+    "help": "Prints the knob catalog embedded in this binary as one KnobCatalog document: every vllm serve flag with its label, kind, default, choices and limits, read from vLLM's source at the pinned version, marking the knobs servtuner captures and tunes. The api serves it at GET /knobs, so the catalog has one source.\n\nUsage:\n  servtuner knobs [flags]\n\nFlags:\n  -h, --help   help for knobs\n"
+  },
+  {
+    "name": "launcher",
+    "short": "Run vLLM for servtuner's tuning loop on a host outside Kubernetes",
+    "help": "Serves the launcher API: servtuner's deployer starts, stops and inspects `vllm serve` here with the flags a tuning session chooses (\"Hosts outside Kubernetes\"). Settings come from flags, over a YAML config file (--config, $SERVTUNER_LAUNCHER_CONFIG, $XDG_CONFIG_HOME/servtuner/launcher.yaml, then /etc/servtuner/launcher.yaml; deploy/launcher/README.md). Every request needs the bearer token in the token file. vLLM's own API key, if any, is read from the API key file and given as VLLM_API_KEY, never sent over the network. Under systemd, the files default to the unit's LoadCredential= launcher-token and vllm-api-key. The TLS mode is required and never inferred: platform serves plain HTTP, tls serves the certificate and key files.\n\nUsage:\n  servtuner launcher [--config FILE] [--listen ADDR --token-file FILE --tls-mode platform|tls] [flags]\n\nFlags:\n      --api-key-file string    file holding vLLM's --api-key value, given to vLLM as VLLM_API_KEY (api_key_file)\n      --config string          YAML config file (default: $SERVTUNER_LAUNCHER_CONFIG, $XDG_CONFIG_HOME/servtuner/launcher.yaml, /etc/servtuner/launcher.yaml)\n  -h, --help                   help for launcher\n      --listen string          address to serve the launcher API on (listen) (default \":9123\")\n      --log-dir string         directory for vllm.log (log_dir) (default \"servtuner-launcher\")\n      --tls-cert-file string   server certificate, tls mode (tls_cert_file)\n      --tls-key-file string    server key, tls mode (tls_key_file)\n      --tls-mode string        platform (plain HTTP) or tls; required (tls_mode)\n      --token-file string      file holding the bearer token every request must carry (token_file)\n      --vllm string            the vllm executable (vllm) (default \"vllm\")\n"
+  },
+  {
+    "name": "plan",
+    "short": "Plan replicas, HPA and totals for a traffic level from measured capacity models",
+    "help": "Plans each capacity model against the request: the per-replica SLO-max at the requested SLO, interpolated only between measured stages, then replicas, HPA, totals, queue concurrency and sensitivity, with the request's overrides applied. --payload-models adds runs of a tier's configuration at other request sizes, which only fit its memory per in-flight request m(s). Writes plan.json to --out, or to standard output; --out-dir writes plan.json, patches/plan-values.yaml and plan.md there instead. It reads only the given files. Exits 0 on success, 2 for a bad argument or an invalid document, and 1 when the plan cannot be computed.\n\nUsage:\n  servtuner plan --input <plan-request.json> --models <capacity_model.json>... [flags]\n\nFlags:\n  -h, --help                     help for plan\n      --input string             the plan request (plan-request.schema.json)\n      --models strings           capacity_model.json files, one per tier\n      --out string               where to write plan.json (default: standard output)\n      --out-dir string           write plan.json, patches/plan-values.yaml and plan.md into this directory\n      --payload-models strings   capacity_model.json files of a payload-size series, for m(s)\n"
+  },
+  {
+    "name": "presets",
+    "short": "Print the workload presets built into this bench, as JSON",
+    "help": "Prints every workload preset embedded in this binary as a JSON array of WorkloadPreset documents, sorted by name and version. The api serves them at GET /workload-presets, so the catalog has one source.\n\nUsage:\n  servtuner presets [flags]\n\nFlags:\n  -h, --help   help for presets\n"
+  },
+  {
+    "name": "propose",
+    "short": "Choose the next configuration of a tuning session, or say the search is done",
+    "help": "The tuning loop's choice of what to run next. It reads the search space, the boot-probe results (--infeasible: boots that failed, and those that worked with their c_kv) and the session's analysed bundles, and writes the next configurations to boot or run, each with its ladder and a rationale, or a done verdict. Tiers run in order (feasibility, structural, scheduler, fine_tuning), then the best configurations are confirmed with the full ladder and repeats. It is pure: it reads files, writes JSON, and gives byte-identical output for the same inputs. The session's budget is the caller's. Writes to --out, or to standard output. Exits 0 on success, 2 for a bad argument or an invalid space, and 1 when no proposal can be computed.\n\nUsage:\n  servtuner propose --space space.yaml [--bundles <bundle>,<bundle>...] [--infeasible <file>] [--out proposal.json] [flags]\n\nFlags:\n      --bundles strings     analysed bundle directories of the session so far\n  -h, --help                help for propose\n      --infeasible string   boot-probe results (YAML or JSON)\n      --out string          where to write the proposal (default: standard output)\n      --space string        the search space (YAML or JSON)\n"
+  },
+  {
+    "name": "run",
+    "short": "Execute one run and write its bundle",
+    "help": "Executes one run end to end and writes the run bundle into --out. With --api-url, status events are POSTed to the api (--api-tls-mode is then required; it is never inferred).\n\nUsage:\n  servtuner run --spec <path> --out <bundle dir> [flags]\n\nFlags:\n      --api-tls-mode string             transport mode of the api hop: mtls or platform (required with --api-url)\n      --api-url string                  api base URL for status events\n  -h, --help                            help for run\n      --kubeconfig string               kubeconfig for the read-only target snapshot (default: in-cluster config; no cluster means the Kubernetes part is skipped)\n      --object-store-ca-file string     extra CA bundle the object store's certificate is verified against (mtls only)\n      --object-store-cert-file string   client certificate for the object store (mtls only)\n      --object-store-key-file string    client key for the object store (mtls only)\n      --object-store-tls-mode string    transport mode of the object-store hop with an s3:// --out: mtls or platform (required then; never inferred)\n      --offline                         no internet access: never fetch the public token-price datasheet and refuse AWS Price List prices; recorded in environment.json\n      --out string                      bundle directory, or s3://<bucket>/<prefix> (default: <data dir>/runs/<run id>)\n      --run-id string                   run id, a ULID (default: a fresh one)\n      --run-token-file string           file holding the per-run bearer token\n      --secrets-dir string              directory where the Secrets named by the RunSpec are mounted, one subdirectory per Secret (default: $SERVTUNER_SECRETS_DIR, else /etc/servtuner/secrets)\n      --shard-index int                 this process's shard of a RunSpec with engine.shards N: 0 (the default) leads and writes the bundle; 1..N-1 send their share of the load and hand their rows to the leader through --out\n      --spec string                     path to the RunSpec (YAML or JSON)\n      --tls-ca-file string              extra CA bundle the api's certificate is verified against, added to the system pool (mtls only)\n      --tls-cert-file string            client certificate for the api hop (mtls only)\n      --tls-key-file string             client key for the api hop (mtls only)\n"
+  },
+  {
+    "name": "spaces",
+    "short": "Print the starting search spaces built into this bench, as JSON",
+    "help": "Prints every starting search space embedded in this binary (schema/search-spaces) as a JSON array of SearchSpaceTemplate documents, sorted by name and version. The api serves them at GET /search-spaces for New session, so the catalog has one source.\n\nUsage:\n  servtuner spaces [flags]\n\nFlags:\n  -h, --help   help for spaces\n"
+  },
+  {
+    "name": "validate",
+    "short": "Check a RunSpec: schema, transport mode rules and stage lengths",
+    "help": "Checks a RunSpec (YAML or JSON) against the schema, the transport rules (mtls needs https://, platform needs http://) and the minimum stage length. Exits 0 when valid and 2 when not, listing every problem. Stage-length findings are warnings unless --strict is given.\n\nUsage:\n  servtuner validate --spec <path> [flags]\n\nFlags:\n  -h, --help          help for validate\n      --json          print {\"valid\", \"errors\", \"warnings\"} as JSON on standard output (the api reads it); the exit code is unchanged\n      --spec string   path to the RunSpec (YAML or JSON)\n      --strict        treat warnings as errors\n"
+  },
+  {
+    "name": "vllm-args",
+    "short": "Print the vLLM container args for a knob set, as JSON",
+    "help": "Reads a JSON object of vLLM knobs (vllm.max_num_seqs: 256, ...) and prints the container args that set them, as a JSON array, through the same table that captures knobs from a pod's args, so the args always capture back as the same knobs. The api's deployer uses it for managed targets. Exits 2 listing every knob it cannot spell.\n\nUsage:\n  servtuner vllm-args --knobs <knobs.json> [flags]\n\nFlags:\n  -h, --help           help for vllm-args\n      --knobs string   path to a JSON object of vLLM knobs\n"
+  }
+]

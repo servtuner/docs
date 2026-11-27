@@ -1,0 +1,73 @@
+---
+// The docs version picker. It reads /versions.json at the site root when the page loads, so an older build lists
+// releases made after it was built. It stays hidden when the file is missing (a single local build) or lists
+// fewer than two versions. Choosing a version keeps the reader on the same page when that version has it.
+interface Props {
+  /** header: in the tabs row, from 50rem up; menu: in the mobile menu, below 50rem. */
+  placement?: 'header' | 'menu';
+}
+const { placement = 'header' } = Astro.props;
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const version = import.meta.env.DOCS_VERSION ?? 'next';
+---
+
+<label class:list={['version-picker', placement]} data-base={base} data-version={version} hidden>
+  <span class="sr-only">Version</span>
+  <select aria-label="Documentation version"></select>
+</label>
+
+<script>
+  import { loadVersions, versionLabel } from './versions';
+
+  for (const picker of document.querySelectorAll<HTMLElement>('.version-picker')) {
+    const select = picker.querySelector('select')!;
+    const { base, version } = picker.dataset as { base: string; version: string };
+    loadVersions(base)
+      .then((versions) => {
+        if (!versions || versions.versions.length < 2) return;
+        for (const entry of versions.versions) {
+          const option = new Option(versionLabel(entry, versions.latest), entry.base);
+          option.selected = entry.slug === version;
+          select.add(option);
+        }
+        picker.hidden = false;
+        select.addEventListener('change', async () => {
+          const target = select.value;
+          const page = location.pathname.startsWith(base) ? location.pathname.slice(base.length) : '';
+          const same = target + page + location.hash;
+          const exists = page && (await fetch(target + page, { method: 'HEAD' }).catch(() => null))?.ok;
+          location.href = exists ? same : target;
+        });
+      })
+      .catch(() => {});
+  }
+</script>
+
+<style>
+  .version-picker {
+    display: flex;
+    align-items: center;
+  }
+  .version-picker[hidden] {
+    display: none;
+  }
+  .header {
+    margin-inline-start: auto;
+  }
+  .menu {
+    padding-block: 0.5rem;
+  }
+  @media (max-width: 49.99rem) {
+    .header {
+      display: none;
+    }
+  }
+  .version-picker select {
+    padding: 0.15rem 0.4rem;
+    border: 1px solid var(--sl-color-gray-5);
+    border-radius: 0.25rem;
+    background: var(--sl-color-bg);
+    color: var(--sl-color-gray-2);
+    font-size: var(--sl-text-sm);
+  }
+</style>

@@ -1,0 +1,87 @@
+---
+title: Read the results
+description: Find the quality grade, SLO-max, latency percentiles and recommendations in a run.
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+Read the bundle from the [first run](/quickstart/first-run/) in the order servtuner does: can you trust it, what did it measure, and what follows from it?
+
+## Prerequisites
+
+- The `quickstart-run` bundle.
+- `jq`, or any JSON viewer.
+
+## Steps
+
+<Steps>
+
+1. Check the grade and its reasons.
+
+   ```sh
+   jq '.quality.grade, [.quality.issues[].code]' quickstart-run/analysis.json
+   ```
+
+   ```text title="Output"
+   "degraded"
+   [
+     "catalog_missing"
+   ]
+   ```
+
+2. Check that each stage is valid, and compare offered with achieved load.
+
+   ```sh
+   jq -c '.quality.stages[] | {stage_index, is_valid, is_excluded}' quickstart-run/analysis.json
+   jq -c '.stages[] | {offered_rps, achieved_rps}' quickstart-run/analysis.json
+   ```
+
+3. Read the capacity answer.
+
+   ```sh
+   jq '.capacity.slo_max' quickstart-run/analysis.json
+   ```
+
+   ```json title="Output from one run"
+   {
+     "is_interpolated": false,
+     "rps": 19.983333333333334,
+     "valid_stage_index": 2
+   }
+   ```
+
+   No stage failed an SLO, so this is a **lower bound**. The target was never pushed past its limit. Extend the ladder to find the limit.
+
+4. Read a percentile with its confidence interval.
+
+   ```sh
+   jq '.stages[2].ttft.p95_seconds' quickstart-run/analysis.json
+   ```
+
+5. Read the recommendations and what each one rests on.
+
+   ```sh
+   jq '.recommendations' quickstart-run/recommendations.json
+   ```
+
+</Steps>
+
+A percentile with too few requests has an `insufficient_samples_reason` and no value. p99 needs 1,000 requests in a stage, so the first two stages here have none.
+
+## Verify
+
+Recompute the analysis from the raw files:
+
+```sh
+./servtuner analyze quickstart-run
+```
+
+```text title="Output"
+ok: wrote analysis.json (quality degraded, 3 stage(s))
+```
+
+## Next steps
+
+- Write your own [RunSpec](/guides/runspecs/).
+- Learn why a stage is [trusted or excluded](/concepts/trustworthy-rps/).
+- See the same results as charts in [inspect runs](/guides/inspect-runs/).

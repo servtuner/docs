@@ -1,0 +1,64 @@
+---
+title: Benchmark an OpenAI-compatible server
+description: Benchmark any server that exposes an OpenAI-compatible API, from the client side.
+sidebar:
+  label: OpenAI-compatible
+---
+
+Use this type when the server has no servtuner catalog. You get every client-side metric. Kubernetes resource metrics are available when you declare its workload and Prometheus.
+
+## Prerequisites
+
+- An endpoint that ends in the API prefix, usually `/v1`.
+- The exact model name the server reports.
+
+## Configure the target
+
+{/* schema: runspec */}
+
+```yaml title="gateway.yaml"
+apiVersion: servtuner.dev/v1
+kind: RunSpec
+name: gateway-baseline
+target:
+  type: openai-compatible
+  endpoint: https://api.example.com/v1
+  model: example-model
+  auth:
+    secretRef: { name: gateway-key, key: token }
+  tls: { mode: tls }
+engine: { type: loadgen }
+workload:
+  streaming: true
+  dataset:
+    type: synthetic
+    input_tokens: { mean: 256, stddev: 64 }
+    output_tokens: { mean: 128 }
+load:
+  stages:
+    - { rate: 2, duration: 120s }
+    - { rate: 4, duration: 120s }
+slos: { ttft_p95: 2s, max_error_rate: 0.01 }
+```
+
+`tls` verifies the server and presents no client certificate. It suits public HTTPS endpoints.
+
+:::caution
+A benchmark of a paid API sends real, billed requests. Start with low rates, and get permission to load test a service you do not own.
+:::
+
+## Run it
+
+For a local process, put the key in `<dir>/gateway-key/token` and pass `--secrets-dir <dir>`:
+
+```sh
+servtuner run --spec gateway.yaml --secrets-dir ./secrets
+```
+
+## Verify
+
+Run a connection check first. In the result, confirm that achieved RPS follows offered RPS and that errors are zero or expected.
+
+## Next steps
+
+Use the [SLO guide](/guides/slos-and-capacity/) to extend the ladder until a stage fails.

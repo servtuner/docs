@@ -1,0 +1,94 @@
+---
+title: Benchmark vLLM
+description: Configure a vLLM target, collect its metrics and read the vLLM advisor.
+sidebar:
+  label: vLLM
+---
+
+Measure a vLLM server directly and explain its latency with KV cache, queue and preemption metrics.
+
+## Prerequisites
+
+- A vLLM endpoint reachable from bench.
+- [Prometheus](/deployment/prometheus/) scraping vLLM about every 5 seconds.
+- For snapshots, its namespace listed in `rbac.bench.targetNamespaces`.
+
+## Configure the target
+
+{/* schema: runspec */}
+
+```yaml title="vllm.yaml"
+apiVersion: servtuner.dev/v1
+kind: RunSpec
+name: vllm-baseline
+experiment: vllm-max-num-seqs
+knobs:
+  vllm.max_num_seqs: 128
+target:
+  type: vllm
+  endpoint: https://vllm.inference.svc:8000/v1
+  model: example/model
+  auth:
+    secretRef: { name: vllm-key, key: token }
+  workload:
+    namespace: inference
+    selector: { app: vllm }
+  tls:
+    mode: mtls
+    secretRef: { name: servtuner-client }
+engine: { type: loadgen }
+workload:
+  preset: chat-short@1
+  streaming: true
+load:
+  pacing: poisson
+  warmup: 30s
+  stages:
+    - { rate: 4, duration: 180s }
+    - { rate: 8, duration: 180s }
+    - { rate: 16, duration: 180s }
+slos: { ttft_p95: 500ms, itl_p95: 50ms }
+prometheus:
+  url: https://prometheus.monitoring.svc:9090
+  tls:
+    mode: mtls
+    secretRef: { name: servtuner-client }
+```
+
+For a vLLM outside Kubernetes, use `target.metrics` instead of `target.workload`. It names the labels your scrape job attaches. See [off-cluster targets](/deployment/prometheus/#off-cluster-targets).
+
+## Run it
+
+Submit the file in **New run**, or run `servtuner run --spec vllm.yaml`. Keep warmup requests separate from the first stage, and use stages long enough for your percentiles.
+
+Set these on a vLLM you benchmark:
+
+- `--stream-interval 1`. A larger value sends several tokens per chunk, so inter-token latency measures chunks. servtuner grades such a run degraded.
+- Leave statistics logging on. `--disable-log-stats` removes the Prometheus metrics.
+- Finer `--custom-histogram-buckets`, if you need server-side latencies under 0.3 seconds.
+
+## Read the advisor
+
+| Rule   | What it looks for                                                |
+| ------ | ---------------------------------------------------------------- |
+| V1     | Running requests pinned at `max_num_seqs` with KV cache to spare |
+| V2     | KV cache full, or preemptions                                    |
+| V3     | `max_model_len` far above the observed lengths                   |
+| V4, V5 | TTFT or ITL over its SLO from prefill or decode pressure         |
+| V6     | Prefix cache hits lower than the workload should give            |
+| V7     | The API server bound by CPU while the GPU is idle                |
+| V8     | GPU memory growing above vLLM's reservation                      |
+| V9     | An under-used GPU with no vLLM cause                             |
+| V10    | Server percentiles inside the first histogram bucket             |
+| V11    | Requests refused by vLLM's admission limits                      |
+| V12    | Logging options that cost CPU or remove metrics                  |
+
+A single run gives a hypothesis. Confirm it with a [follow-up](/guides/follow-ups/) or an [experiment](/guides/experiments/).
+
+## Verify
+
+On the run's **Config** tab, check that declared knobs match captured knobs. A `mismatch` excludes the run from comparisons, because the target did not run what you declared.
+
+## Next steps
+
+Compare values in an [experiment](/guides/experiments/), or let servtuner search with a [tuning session](/guides/tuning-sessions/).

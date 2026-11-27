@@ -1,0 +1,62 @@
+---
+title: Use kind
+description: Create a disposable kind cluster with servtuner's prerequisites.
+sidebar:
+  label: kind
+---
+
+Use kind to exercise the Kubernetes runner and chart with mock targets. The results do not represent production hardware.
+
+:::note[Not verified for this site]
+The cluster commands were not run while writing this page. They come from the scripts in the source. `kind-up` refuses to touch an existing cluster of the same name.
+:::
+
+## Prerequisites
+
+- Docker, kind, kubectl, Helm and just.
+- A cluster name that is not in use.
+
+## Steps
+
+1. Create the cluster. This installs cert-manager, CloudNativePG, ingress-nginx, Envoy Gateway and a test certificate issuer.
+
+   ```sh
+   SERVTUNER_KIND_CLUSTER=servtuner-dev SERVTUNER_KIND_UP_CONFIRM=1 just kind-up
+   ```
+
+2. Build the images and load them.
+
+   ```sh
+   just images
+   for image in api bench frontend mock; do
+     kind load docker-image "servtuner-$image:e2e" --name servtuner-dev
+   done
+   ```
+
+3. Run an end-to-end test, or install the chart with your own values.
+
+   ```sh
+   SERVTUNER_KUBE_CONTEXT=kind-servtuner-dev just e2e-platform
+   ```
+
+The test installs into its own namespace and removes it at the end. `just e2e-mtls` covers certificates, `just e2e-gateway-mtls` the Gateway API, and `just e2e-forward-header` sign-in through a proxy. `just e2e-airgap <version>` builds its own cluster with no internet access; see [air-gapped installs](/deployment/air-gapped/).
+
+## Single-node settings
+
+Use `bench.targetAntiAffinity: preferred`, because one node cannot keep bench away from the target. If your storage is ReadWriteOnce, set the claim's access mode so the chart pins Jobs to the API's node.
+
+## Verify
+
+```sh
+kubectl --context kind-servtuner-dev get pods -A
+```
+
+## Clean up
+
+```sh
+kind delete cluster --name servtuner-dev
+```
+
+## Next steps
+
+Add [Prometheus](/deployment/prometheus/) and read the [Kubernetes install](/deployment/helm/).

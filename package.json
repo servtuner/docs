@@ -1,0 +1,43 @@
+{
+  "name": "servtuner-docs",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Documentation site for servtuner",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build && node scripts/postbuild.mjs",
+    "preview": "astro preview",
+    "sync": "node scripts/sync.mjs",
+    "check": "astro check && prettier --check . && node scripts/check-content.mjs && node scripts/check-examples.mjs && node --test 'scripts/*.test.mjs'",
+    "format": "prettier --write .",
+    "check:links": "node scripts/check-links.mjs",
+    "check:coverage": "node scripts/check-coverage.mjs",
+    "check:privacy": "node scripts/check-privacy.mjs",
+    "check:browser": "node scripts/check-browser.mjs",
+    "check:site": "npm run check:links && npm run check:coverage && npm run check:privacy",
+    "versions": "node scripts/versions.mjs",
+    "build:site": "node scripts/build-site.mjs",
+    "cut-version": "node scripts/cut-version.mjs"
+  },
+  "dependencies": {
+    "@astrojs/starlight": "0.43.1",
+    "astro": "7.4.13",
+    "sharp": "0.35.5",
+    "yaml": "2.9.1"
+  },
+  "devDependencies": {
+    "@astrojs/check": "0.9.12",
+    "@types/node": "24.19.2",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "playwright-core": "1.65.1",
+    "prettier": "3.10.1",
+    "prettier-plugin-astro": "1.1.2",
+    "typescript": "5.9.3"
+  },
+  "license": "(Apache-2.0 AND CC-BY-4.0)"
+}

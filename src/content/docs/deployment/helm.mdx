@@ -1,0 +1,148 @@
+---
+title: Install on Kubernetes
+description: Install servtuner and its prerequisites as separate Helm releases with helmfile.
+sidebar:
+  label: Kubernetes
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+servtuner installs as five Helm releases: cert-manager, CloudNativePG, Envoy Gateway, kube-prometheus-stack and servtuner itself. Each prerequisite is its upstream chart, unmodified, in its own release and namespace. You upgrade and roll back each one on its own, and skip any your cluster already runs. `deploy/helmfile.yaml.gotmpl` in the servtuner repository declares all five and installs them in order.
+
+For a cluster with no internet access, follow [air-gapped installs](/deployment/air-gapped/) instead. It uses the same helmfile.
+
+## Prerequisites
+
+- Kubernetes 1.35 or newer, and a default StorageClass. For real benchmarks, GPU nodes with the NVIDIA device plugin.
+- `helm` 3 or 4 and `helmfile` v1.8.5. `helmfile sync` needs no Helm plugin; `apply` and `diff` need helm-diff.
+- servtuner's images (`servtuner-api`, `servtuner-bench`, `servtuner-frontend`) in a registry your nodes can pull from. No public images are published yet: build them with `just images` and push them, or load a [release archive](/deployment/air-gapped/#the-release) into your registry.
+- ReadWriteMany storage for several nodes, or an S3-compatible store. See [storage](/deployment/storage/).
+
+## Steps
+
+### 1. Create Secrets first
+
+No secret goes in a values file, the helmfile or the release. Values name a Kubernetes Secret, and you create it before the install.
+
+| Secret                                                    | Where                               | Keys                           | When                                          |
+| --------------------------------------------------------- | ----------------------------------- | ------------------------------ | --------------------------------------------- |
+| A registry pull secret (`kubernetes.io/dockerconfigjson`) | Every namespace the releases run in | `.dockerconfigjson`            | Your registry needs a login to pull           |
+| TLS certificates (`kubernetes.io/tls`)                    | servtuner's namespace               | `tls.crt`, `tls.key`, `ca.crt` | `tls.source: secret` instead of cert-manager  |
+| Object store keys for model weights                       | The managed vLLM's namespace        | Your names                     | Weights streamed from S3 without pod identity |
+| A Hugging Face token                                      | The managed vLLM's namespace        | `token`                        | Gated models from Hugging Face or a mirror    |
+
+The chart generates the first-admin setup token itself. See [authentication](/deployment/authentication/).
+
+### 2. Write your site values
+
+Copy `deploy/helmfile/site-values.example.yaml` to `deploy/site-values.yaml`. Every value of the chart may go there; these are the ones every site decides.
+
+<Tabs syncKey="tls">
+  <TabItem label="mTLS (default)">
+
+```yaml title="deploy/site-values.yaml"
+tls:
+  mode: mtls
+  source: cert-manager
+  certManager:
+    issuerRef: { kind: ClusterIssuer, name: your-issuer }
+gateway:
+  enabled: true
+  hostname: servtuner.example.internal
+  parentRefs:
+    - { name: your-gateway, namespace: gateway-system }
+storage:
+  file:
+    pvc: { create: true, accessMode: ReadWriteMany, size: 100Gi }
+rbac:
+  bench:
+    targetNamespaces: [inference]
+```
+
+  </TabItem>
+  <TabItem label="Platform encryption">
+
+```yaml title="deploy/site-values.yaml"
+tls:
+  mode: platform
+gateway:
+  enabled: true
+  hostname: servtuner.example.internal
+  parentRefs:
+    - { name: your-gateway, namespace: gateway-system }
+storage:
+  file:
+    pvc: { create: true, accessMode: ReadWriteMany, size: 100Gi }
+rbac:
+  bench:
+    targetNamespaces: [inference]
+```
+
+`platform` states that your network encrypts this traffic. servtuner cannot check that.
+
+  </TabItem>
+</Tabs>
+
+Envoy Gateway installs the controller, not a `GatewayClass` or a `Gateway`: those are yours. `deploy/helmfile/envoy-gateway-class.yaml` is an example class. If your class names its own `EnvoyProxy`, give it `mergeType: StrategicMerge`. Otherwise it replaces Envoy Gateway's default proxy settings, including the registry the proxy image comes from.
+
+### 3. Install
+
+```sh
+helmfile -f deploy/helmfile.yaml.gotmpl -e eks sync     # or -e kind for a local kind cluster
+```
+
+To use your own image registry, add `--state-values-set registry=registry.example:5000`. With a pull secret, also add `--state-values-set 'imagePullSecrets={regcred}'`.
+
+### 4. Sign in
+
+Open the hostname you set, create the first admin with the setup token, and sign in. See [authentication](/deployment/authentication/).
+
+## Skip a prerequisite
+
+Turn off any prerequisite your cluster already runs:
+
+```sh
+helmfile -f deploy/helmfile.yaml.gotmpl -e eks \
+  --state-values-set install.certManager=false,install.prometheus=false sync
+```
+
+servtuner then uses yours: cert-manager's CRDs, the CloudNativePG operator (or an external Postgres with `postgres.mode: external`), your Gateway API controller or an Ingress, and your Prometheus (`prometheus.url` in your site values).
+
+## Expose it
+
+<Tabs>
+  <TabItem label="Gateway API">
+
+`gateway.enabled` renders two HTTPRoutes on one hostname: the UI, and the API under `<basePath>/api`. In `mtls`, an Envoy `Backend` presents the chart's client certificate to the API and a `BackendTLSPolicy` checks the API's name. Install Envoy Gateway with `enableBackend`.
+
+  </TabItem>
+  <TabItem label="Ingress">
+
+`ingress.enabled` renders the same two routes as Ingresses for ingress-nginx, which is retired upstream: prefer the Gateway API for new installs. In `mtls`, the API Ingress verifies the API with the chart's certificate. `ingress` and `gateway` are exclusive.
+
+  </TabItem>
+</Tabs>
+
+For a subpath, set `frontend.basePath`. Terminate browser TLS at the gateway or ingress. `networkPolicy.enabled` (the default) lets only the ingress controller or gateway (`networkPolicy.ingressController`) and bench Jobs reach the API, and nothing reach a bench pod. It needs a CNI that enforces NetworkPolicy.
+
+## Permissions
+
+The API manages Jobs, ConfigMaps and Secrets in the runs namespace. bench reads workloads in `rbac.bench.targetNamespaces` and nodes cluster-wide. Nothing is granted for managed targets until you list `rbac.tuning.namespaces`.
+
+## Upgrade
+
+Run `helmfile … sync` again with the new versions. The API migrates its database on start. Each release is an ordinary Helm release, so `helm history` and `helm rollback` work on each. To upgrade only servtuner and hold the prerequisites, add `--selector name=servtuner`.
+
+## Verify
+
+```sh
+helmfile -f deploy/helmfile.yaml.gotmpl -e eks list   # the releases and their versions
+kubectl -n servtuner get pods
+kubectl -n servtuner get certificates
+```
+
+Then save a target and run a connection check.
+
+## Next steps
+
+Configure [Prometheus](/deployment/prometheus/), [storage](/deployment/storage/), [transport security](/deployment/transport-security/) and [authentication](/deployment/authentication/). See [every value](/reference/helm-values/).

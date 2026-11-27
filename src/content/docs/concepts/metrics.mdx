@@ -1,0 +1,49 @@
+---
+title: Metrics
+description: The definitions of client and server metrics, and which one to trust.
+---
+
+**Client metrics measure user experience. Server metrics explain it.** When they disagree, start from the client's.
+
+## Client metrics
+
+| Metric        | Definition                                                                       |
+| ------------- | -------------------------------------------------------------------------------- |
+| TTFB          | Send to response headers                                                         |
+| TTFT          | Send to the first generated token of any kind, including reasoning or tool calls |
+| First content | Send to the first visible content                                                |
+| ITL           | Time between stream chunks, excluding the first                                  |
+| TPOT          | (E2E − TTFT) ÷ (completion tokens − 1)                                           |
+| E2E           | Send to the end of the response                                                  |
+| Offered RPS   | Rate the schedule asked for                                                      |
+| Achieved RPS  | Requests attributed to the stage, per second                                     |
+| Goodput       | Rate of requests that met the SLOs                                               |
+| Send lag      | Actual minus scheduled send time                                                 |
+
+A chunk can hold several tokens, so ITL is per chunk. Percentiles come with bootstrap 95% confidence intervals.
+
+## Server catalogs
+
+A catalog is a versioned set of PromQL queries.
+
+| Catalog      | Collected                                                         |
+| ------------ | ----------------------------------------------------------------- |
+| `vllm`       | For vLLM targets                                                  |
+| `litellm`    | For LiteLLM targets                                               |
+| `bifrost`    | For Bifrost targets                                               |
+| `kubernetes` | CPU, memory, throttling and restarts of the target and bench pods |
+| `dcgm`       | GPU metrics, only when found                                      |
+
+A missing optional catalog never fails a run. It is recorded and lowers the confidence of advice that needs it.
+
+## Differences that mislead
+
+- vLLM's request-latency buckets start at 0.3 seconds. Smaller server percentiles are not meaningful with default buckets.
+- LiteLLM latency histograms count successes only. vLLM's include failed requests.
+- Bifrost's time to first token starts just before the upstream send, not at receipt.
+- `DCGM_FI_DEV_GPU_UTIL` means that some kernel was running. It is a weak saturation signal.
+- cAdvisor refreshes at most every 15 seconds, and CPU peaks are one-minute averages.
+
+## Scrape resolution
+
+Server data is only as fine as its [scrape interval](/deployment/prometheus/). bench discovers intervals from Prometheus and records them. It does not assume them when it can ask.

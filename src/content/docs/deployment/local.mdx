@@ -1,0 +1,74 @@
+---
+title: Run the control plane locally
+description: Run Postgres, the API, bench and the frontend on one machine.
+sidebar:
+  label: Local
+---
+
+import { Steps } from '@astrojs/starlight/components';
+
+Run the API with the subprocess runner. Connections stay on your machine and use plain HTTP.
+
+## Prerequisites
+
+- Docker, Go, `uv` and Node.js at the versions in the checkout's `.tool-versions`.
+- Ports 15432, 18080 and 15173 free.
+
+## Steps
+
+<Steps>
+
+1. From the servtuner checkout, install dependencies and build the servtuner CLI.
+
+   ```sh
+   uv sync --project api --locked
+   npm --prefix frontend ci
+   (cd bench && go build -o /tmp/servtuner ./cmd/servtuner)
+   ```
+
+2. Start Postgres for local use only.
+
+   ```sh
+   docker run -d --rm --name servtuner-local-pg -p 127.0.0.1:15432:5432 \
+     -e POSTGRES_USER=servtuner -e POSTGRES_PASSWORD=local-only -e POSTGRES_DB=servtuner postgres:17
+   ```
+
+3. Start the API.
+
+   ```sh
+   export SERVTUNER_RUNNER=subprocess SERVTUNER_BENCH_BINARY=/tmp/servtuner
+   export SERVTUNER_DATA_DIR=/tmp/servtuner-data SERVTUNER_API_PORT=18080 SERVTUNER_TLS_MODE=platform
+   export SERVTUNER_DATABASE_HOST=127.0.0.1 SERVTUNER_DATABASE_PORT=15432 SERVTUNER_DATABASE_NAME=servtuner
+   export SERVTUNER_DATABASE_USER=servtuner SERVTUNER_DATABASE_PASSWORD=local-only SERVTUNER_DATABASE_SSLMODE=disable
+   uv run --project api servtuner-api
+   ```
+
+4. Start the frontend in another terminal.
+
+   ```sh
+   cd frontend
+   SERVTUNER_DEV_API=http://127.0.0.1:18080 npx vite --host 127.0.0.1 --port 15173 --strictPort
+   ```
+
+5. Open `http://127.0.0.1:15173/`.
+
+</Steps>
+
+Set `SERVTUNER_SECRET_STORE=file` to store target keys in files for local development.
+
+## Verify
+
+```sh
+curl --fail http://127.0.0.1:18080/healthz
+curl --fail http://127.0.0.1:15173/api/runs
+```
+
+Then create the [first run](/quickstart/first-run/) in **New run**.
+
+## Clean up
+
+Stop the API and frontend, then run `docker stop servtuner-local-pg`. Delete `/tmp/servtuner-data` when you no longer need the runs.
+
+## Next steps
+
+Use `just e2e-local-platform` or `just e2e-local-mtls` to run the local end-to-end tests, or [install with Helm](/deployment/helm/).

@@ -1,0 +1,56 @@
+---
+title: Size resources
+description: Turn measured usage into requests, limits, concurrency and replica counts.
+---
+
+servtuner sizes one replica at its SLO-max, then shows how many replicas each traffic level needs. Traffic does not have to be known first.
+
+## Prerequisites
+
+- A run with a Kubernetes snapshot and Prometheus resource metrics.
+- A ladder that reaches a failing stage.
+
+## Steps
+
+1. Open **Recommendations** and check the operating point the sizes rest on.
+2. Expand a value to see its formula, inputs and source stage.
+3. Review the limits policy and caveats.
+4. Download the files in `patches/`, review them, and apply them yourself.
+5. Open **Capacity** and find the row for your traffic.
+
+## How values are derived
+
+| Value          | From                                                                          |
+| -------------- | ----------------------------------------------------------------------------- |
+| CPU request    | p95 usage plus 20%                                                            |
+| CPU limit      | One-minute peak plus 30%. By default, only when the pod already has a limit   |
+| Memory request | p95 working set plus 20%                                                      |
+| Memory limit   | Peak working set plus 30%. Higher after an OOM kill or significant growth     |
+| GPU memory     | KV cache need from vLLM, validated with DCGM when present                     |
+| Concurrency    | p99 of requests in flight, checked against a Poisson model                    |
+| Queue          | Large enough for bursts, small enough that queued requests still meet the SLO |
+| Replicas       | Traffic divided by SLO-max per replica with 20% headroom                      |
+
+Override headroom in `analysis.headroom` and limits in `analysis.limits`. Recommendations assume your production token lengths and arrivals resemble the run's.
+
+## Confidence
+
+| Level  | Basis                                                                            |
+| ------ | -------------------------------------------------------------------------------- |
+| High   | An experiment with at least three repeats, a significant result and full metrics |
+| Medium | Strong evidence from one run, or an experiment with few repeats                  |
+| Low    | Missing metrics, one stage, interpolation, or an OOM or restart                  |
+
+Results apply to the hardware they were measured on. servtuner never projects one GPU model's numbers to another.
+
+## Cost
+
+Set `analysis.infra_pricing.source` to `static` or `aws` for infrastructure cost, and `analysis.token_pricing.source` to `datasheet` for router token cost. Both default to `none`. Prices are copied into the bundle.
+
+## Verify
+
+After applying a change, run again at the same ladder. The new run should meet the SLOs at the operating point without throttling or restarts.
+
+## Next steps
+
+Test one value with a [follow-up](/guides/follow-ups/) or plan a traffic level with the [planner](/guides/planner/).

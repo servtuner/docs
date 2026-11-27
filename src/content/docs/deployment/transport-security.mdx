@@ -1,0 +1,66 @@
+---
+title: Configure transport security
+description: Choose an explicit transport mode for every connection.
+sidebar:
+  label: Transport security
+---
+
+servtuner never assumes that a network is encrypted and never infers a mode. Each connection, or _hop_, states one.
+
+| Mode       | What servtuner does                                                | Use it for                                  |
+| ---------- | ------------------------------------------------------------------ | ------------------------------------------- |
+| `mtls`     | Presents a client certificate and verifies the server              | The default for servtuner's own connections |
+| `platform` | Speaks plain HTTP or TCP. You assert that the platform encrypts it | A mesh, or a CNI with encryption            |
+| `tls`      | Verifies the server and presents no certificate                    | RunSpec hops to ordinary HTTPS servers      |
+
+Modes do not mix. `mtls` or `tls` with an `http://` URL, or `platform` with certificate settings, is an error. There is no option to skip verification.
+
+## Prerequisites
+
+- For `mtls`, cert-manager with an issuer or `kubernetes.io/tls` Secrets.
+
+## Steps
+
+### servtuner's own hops
+
+Set `tls.mode`, and override a hop under `tls.hops` when it differs:
+
+| Hop               | Connection                            |
+| ----------------- | ------------------------------------- |
+| `ingressApi`      | Ingress or gateway to API             |
+| `benchApi`        | bench to API. Must equal `ingressApi` |
+| `postgres`        | API to Postgres                       |
+| `objectStore`     | API and bench to S3                   |
+| `benchPrometheus` | Chart-level Prometheus default        |
+
+```yaml
+tls:
+  mode: mtls
+  source: cert-manager
+  certManager:
+    issuerRef: { kind: ClusterIssuer, name: your-issuer }
+  hops:
+    benchPrometheus: platform
+```
+
+With `source: secret`, name a Secret for each component. The bench Secret must exist in the runs namespace.
+
+### RunSpec hops
+
+Set `target.tls`, each `upstreams[].tls` and `prometheus.tls`. For `mtls`, name a Secret in `secretRef`. For `tls` with a private CA, name one in `caSecretRef`. Only its `ca.crt` is read.
+
+### Private CAs
+
+Each pod combines system CAs with the private CA and sets `SSL_CERT_FILE`. Do not point `SSL_CERT_FILE` at a private CA alone, because that replaces the system roots.
+
+## Managed vLLM
+
+Managed vLLM offers `platform` (default) and `tls`. Each `tls` target has its own server certificate. `mtls` is not offered.
+
+## Verify
+
+`servtuner validate` rejects contradictory RunSpecs, and Helm rejects contradictory values. After a run, **Config** shows the mode of every hop.
+
+## Next steps
+
+Configure [secrets](/deployment/secrets/).

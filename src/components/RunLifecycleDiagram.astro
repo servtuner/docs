@@ -1,0 +1,35 @@
+---
+import Diagram from './Diagram.astro';
+---
+
+<Diagram
+  id="life"
+  title="Run lifecycle"
+  width={760}
+  height={255}
+  desc="A run moves from pending to launching, running and collecting, and ends succeeded, failed or cancelled. Inside bench, seven steps run in order: resolve, snapshot, load, collect, normalize, summarize and finalize."
+  caption="Top: the status the API records. Bottom: the steps bench executes in one run."
+  boxes={[
+    { x: 10, y: 15, w: 110, h: 44, title: 'pending' },
+    { x: 155, y: 15, w: 110, h: 44, title: 'launching' },
+    { x: 300, y: 15, w: 110, h: 44, title: 'running' },
+    { x: 445, y: 15, w: 110, h: 44, title: 'collecting' },
+    { x: 590, y: 5, w: 160, h: 64, title: 'succeeded', lines: ['failed · cancelled'], hot: true },
+    { x: 10, y: 150, w: 92, title: 'resolve', lines: ['spec'] },
+    { x: 118, y: 150, w: 92, title: 'snapshot', lines: ['target'] },
+    { x: 226, y: 150, w: 92, title: 'load', lines: ['stages'], hot: true },
+    { x: 334, y: 150, w: 92, title: 'collect', lines: ['Prometheus'] },
+    { x: 442, y: 150, w: 92, title: 'normalize', lines: ['records'] },
+    { x: 550, y: 150, w: 92, title: 'summarize', lines: ['analysis'] },
+    { x: 658, y: 150, w: 92, title: 'finalize', lines: ['manifest'] },
+  ]}
+  arrows={[
+    { d: 'M120 37H153' },
+    { d: 'M265 37H298' },
+    { d: 'M410 37H443' },
+    { d: 'M555 37H588' },
+    ...[102, 210, 318, 426, 534, 642].map((x) => ({ d: `M${x} 178H${x + 15}` })),
+    { d: 'M355 59V100H56V148', dashed: true, label: 'bench starts', at: [205, 94] as [number, number] },
+    { d: 'M704 148V71', dashed: true, label: 'exit status decides', at: [694, 118] as [number, number], anchor: 'end' },
+  ]}
+/>

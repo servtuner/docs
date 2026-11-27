@@ -1,0 +1,54 @@
+---
+title: Core concepts
+description: The vocabulary used across the servtuner UI, API and documentation.
+---
+
+## Describing a benchmark
+
+**Target.** The system under test. Its type is `vllm`, `litellm`, `bifrost` or `openai-compatible`. The type selects the metrics, the configuration capture and the advisor.
+
+**RunSpec.** The complete, immutable description of one benchmark. Editing a RunSpec makes a new run.
+
+**Workload.** The request mix: API, token distributions, prefix sharing, conversation shape and seed. Its hash decides which runs are comparable.
+
+**Workload preset.** A named, versioned workload, such as `chat-short@1`.
+
+**Stage.** A period of load at one offered rate. An ordered set of stages is a _ladder_.
+
+**SLO.** A threshold a stage must meet, such as p95 time to first token.
+
+**Engine.** The load generator: [loadgen or inference-perf](/concepts/engines/).
+
+## Running it
+
+**Run.** One execution of a RunSpec, identified by a ULID.
+
+**Run bundle.** The directory or object prefix with all of a run's raw and derived data.
+
+**Upstream.** A backend behind a router target.
+
+**Hop.** One network connection. Each hop has an explicit [transport mode](/deployment/transport-security/).
+
+## Deciding from it
+
+**Quality grade.** `good`, `degraded` or `unusable`, from the data quality gate.
+
+**SLO-max.** The highest trustworthy rate at which every SLO holds.
+
+**Knee.** The first stage where latency starts rising much faster than load, queueing appears or preemptions start.
+
+**Knob.** A setting you vary, such as `vllm.max_num_seqs`. servtuner compares declared knobs with captured ones when it can read them.
+
+**Experiment.** A named group of runs compared by their knobs.
+
+**Recommendation.** A proposed value with its evidence, derivation and confidence. It is _diagnostic_ from one run and _empirical_ from an experiment that varied the knob.
+
+**Capacity model.** The measured curves and sizes of one run, used by the planner.
+
+**Managed target.** A vLLM that servtuner deploys and may reconfigure.
+
+**Tuning session.** A search over a managed target's knobs.
+
+## Next steps
+
+See these in practice in the [quickstart](/quickstart/first-run/), or look a term up in the [glossary](/help/glossary/).

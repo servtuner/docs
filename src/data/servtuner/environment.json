@@ -1,0 +1,354 @@
+[
+  {
+    "name": "`SERVTUNER_BASE_PATH`",
+    "meaning": "context path the UI is hosted under (`frontend.basePath`); validated at start, an invalid value stops the container. Served under this path and also at `/`, so an ingress may pass the prefix through or strip it",
+    "values": "`/` (default), `/servtuner/`, `/tools/servtuner/ui/`",
+    "readBy": "frontend"
+  },
+  {
+    "name": "`SERVTUNER_SCHEMA_DIR`",
+    "meaning": "directory of the RunSpec and event schemas (`schema/json`); the api image sets it, the chart does not",
+    "values": "path",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_API_PORT`",
+    "meaning": "api listen port",
+    "values": "integer",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_SECRET_STORE`",
+    "meaning": "where saved targets' keys live (`secretStore`): Secrets in the runs namespace, files under the data directory (local development only), or nowhere",
+    "values": "`kubernetes` (chart default), `file`, `none` (the api's own default)",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_RUN_SECRETS_DIR`",
+    "meaning": "where a subprocess run or a target check gets the Secrets it names, as files for `servtuner run --secrets-dir`; deleted when the run or check ends. The chart mounts a memory-backed `emptyDir` there",
+    "values": "path; default `<data dir>/run-secrets`",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_RUNNER`",
+    "meaning": "runner implementation. The api's own default is `subprocess` (dev, single node, CI); the chart sets `kubernetes`",
+    "values": "`subprocess`, `kubernetes`",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_BENCH_BINARY`",
+    "meaning": "path to the `servtuner` binary; required for the `subprocess` runner",
+    "values": "path",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_API_URL`",
+    "meaning": "URL bench uses to reach the api. Subprocess runner: default `https://localhost:<port>` (`http://` in `platform`). Kubernetes runner: required; the chart sets the api Service, `<scheme>://<fullname>-api.<namespace>.svc:<port>`",
+    "values": "URL",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_ENGINE_OVERRIDE`",
+    "meaning": "**dev and e2e only, never set by the chart.** Passed to bench as `--engine-override`, so a run needs no real load engine",
+    "values": "`null`",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_RUNS_NAMESPACE`",
+    "meaning": "namespace for bench Jobs, ConfigMaps, Secrets",
+    "values": "namespace name (release namespace by default)",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_BENCH_SERVICE_ACCOUNT`",
+    "meaning": "ServiceAccount for bench Jobs",
+    "values": "name",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_BENCH_IMAGE`",
+    "meaning": "bench image for Jobs",
+    "values": "image reference",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_IMAGE_REGISTRY`",
+    "meaning": "`global.imageRegistry` without a trailing slash, or empty; offered as the registry of managed vLLM images",
+    "values": "host[:port][/path]",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_OFFLINE`",
+    "meaning": "`offline`: no public datasheet fallback, AWS pricing refused; passed to bench Jobs",
+    "values": "`true` / `false`",
+    "readBy": "api, bench"
+  },
+  {
+    "name": "`SERVTUNER_BENCH_CPU`, `_MEMORY`",
+    "meaning": "the bench pod's requests, equal to its limits (Guaranteed QoS); `bench.resources`",
+    "values": "Kubernetes quantities; default `2`, `2Gi`",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_BENCH_TARGET_ANTI_AFFINITY`",
+    "meaning": "keep the bench pod off the nodes of the workloads under test (`target.workload` and every upstream's); `bench.targetAntiAffinity`",
+    "values": "`required` (default), `preferred` (single-node clusters)",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_BENCH_JOB_TTL_SECONDS`",
+    "meaning": "`ttlSecondsAfterFinished` of bench Jobs; the spec ConfigMap and token Secret are owned by the Job and go with it",
+    "values": "seconds; default `3600`",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_BENCH_START_TIMEOUT_SECONDS`",
+    "meaning": "a bench pod that has not started by then (unschedulable, image pull failing) fails the run with the reason, and its Job is deleted",
+    "values": "seconds; default `300`",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_IMAGE_PULL_SECRETS`",
+    "meaning": "`global.imagePullSecrets` and `imagePullSecrets` names for bench pods, comma-separated, each once",
+    "values": "names",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_DATA_FS_GROUP`",
+    "meaning": "the bench pod's `fsGroup`, so it can write the data volume (`api.fsGroup`)",
+    "values": "integer; default `10001`",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_PROMETHEUS_URL`",
+    "meaning": "Prometheus base URL, used as a RunSpec default",
+    "values": "URL",
+    "readBy": "api, bench"
+  },
+  {
+    "name": "`SERVTUNER_TUNING_MONITOR`",
+    "meaning": "How Prometheus finds a managed vLLM: `podmonitor` (Prometheus Operator) or `scrape-annotations` (community chart), from `tuning.monitor`",
+    "values": "`podmonitor` | `scrape-annotations`",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_MODE`",
+    "meaning": "User auth: `local` checks every route; `none` checks nothing, the explicit opt-out",
+    "values": "`local` (default) | `none`",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_METHODS`",
+    "meaning": "How users sign in under `local`, in chain order",
+    "values": "comma list of `local`, `forward_header`; default `local`",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_SETUP_TOKEN_FILE`",
+    "meaning": "The setup token that creates the first admin (read from a Secret file, never stored); without it no admin can be created",
+    "values": "path",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_SESSION_IDLE_SECONDS`",
+    "meaning": "A session ends after this long unused",
+    "values": "seconds; default 43200",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_SESSION_ABSOLUTE_SECONDS`",
+    "meaning": "A session ends this long after sign-in, whatever its use",
+    "values": "seconds; default 604800",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_COOKIE_SECURE`",
+    "meaning": "`false` only for a plain-HTTP install not on localhost: the cookie then loses `Secure` and the `__Host-` prefix",
+    "values": "`true` (default) | `false`",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_LOCKOUT_MAX_FAILURES`",
+    "meaning": "Failed logins per username before it is locked",
+    "values": "integer; default 5",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_LOCKOUT_WINDOW_SECONDS`",
+    "meaning": "The window failures are counted in, and how long the lock lasts",
+    "values": "seconds; default 900",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_FORWARD_USER_HEADER`",
+    "meaning": "The header the trusted proxy names the user in (forward_header)",
+    "values": "header name; default `X-Forwarded-User`",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_FORWARD_DISPLAY_NAME_HEADER`",
+    "meaning": "Optional header with a new user's display name",
+    "values": "header name",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_FORWARD_EMAIL_HEADER`",
+    "meaning": "Optional header with a new user's email",
+    "values": "header name",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_AUTH_FORWARD_PROVISIONING`",
+    "meaning": "What a forwarded subject with no servtuner user gets",
+    "values": "`refuse` (default) | `viewer`",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_TUNING_NAMESPACES`",
+    "meaning": "Namespaces where managed vLLM targets may be stored and deployed, from `rbac.tuning.namespaces`; unset grants none",
+    "values": "comma-separated names",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_STORAGE_BACKEND`",
+    "meaning": "bundle store",
+    "values": "`file`, `s3`",
+    "readBy": "api, bench"
+  },
+  {
+    "name": "`SERVTUNER_DATA_DIR`",
+    "meaning": "data directory (file backend)",
+    "values": "path",
+    "readBy": "api, bench"
+  },
+  {
+    "name": "`SERVTUNER_DATA_CLAIM`",
+    "meaning": "PVC to mount in Jobs at the data directory (file backend)",
+    "values": "claim name",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_STORAGE_NODE_PINNED`",
+    "meaning": "data volume is RWO, so Jobs must share the api's node",
+    "values": "`true`, `false`",
+    "readBy": "api (runner); recorded as `storage.node_pinned`"
+  },
+  {
+    "name": "`SERVTUNER_API_COMPONENT_LABEL`",
+    "meaning": "`key=value` label selecting the api pod, for the runner's RWO pod affinity",
+    "values": "label selector",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_S3_ENDPOINT`, `_REGION`, `_BUCKET`, `_PREFIX`",
+    "meaning": "S3 location (s3 backend; endpoint empty for AWS)",
+    "values": "strings",
+    "readBy": "api, bench"
+  },
+  {
+    "name": "`SERVTUNER_S3_FORCE_PATH_STYLE`",
+    "meaning": "path-style addressing",
+    "values": "`true`, `false`",
+    "readBy": "api, bench"
+  },
+  {
+    "name": "`SERVTUNER_S3_CHECKSUM_MODE`",
+    "meaning": "checksum behaviour",
+    "values": "`when_required`, `when_supported`",
+    "readBy": "api, bench"
+  },
+  {
+    "name": "`SERVTUNER_S3_PART_SIZE_MIB`",
+    "meaning": "multipart part size for uploads (`storage.s3.partSizeMiB`)",
+    "values": "whole MiB, at least 5; default 16. A larger file goes up in parts, aborted on failure",
+    "readBy": "bench (the api passes it to Jobs)"
+  },
+  {
+    "name": "`SERVTUNER_S3_PRESIGN`",
+    "meaning": "download links (`storage.s3.presign`)",
+    "values": "`true`: `GET /runs/{id}/files/{path}` answers 307 to a 5-minute presigned GET (SigV4); `false` (default): the api streams the file",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_S3_CREDENTIALS_SECRET`, `_ACCESS_KEY_KEY`, `_SECRET_KEY_KEY`",
+    "meaning": "the Secret (in the runs namespace) and the two keys bench Jobs read `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` from, by reference; credentials source `secret` only",
+    "values": "Secret name, key names",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_S3_CREDENTIALS_SOURCE`",
+    "meaning": "credential source",
+    "values": "`secret` (keys in `AWS_ACCESS_KEY_ID`/`AWS_SECRET_ACCESS_KEY`), `ambient` (default credential chain)",
+    "readBy": "api, bench"
+  },
+  {
+    "name": "`SERVTUNER_TLS_MODE`",
+    "meaning": "default transport mode",
+    "values": "`mtls`, `platform`",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_TLS_HOP_BENCH_API`, `_BENCH_PROMETHEUS`, `_INGRESS_API`, `_OBJECT_STORE`, `_POSTGRES`",
+    "meaning": "effective mode of each hop, never inferred",
+    "values": "`mtls`, `platform`",
+    "readBy": "api; runner passes bench's hops to Jobs"
+  },
+  {
+    "name": "`SERVTUNER_TLS_CERT_FILE`, `SERVTUNER_TLS_KEY_FILE`",
+    "meaning": "api certificate and key (mounted `kubernetes.io/tls` Secret)",
+    "values": "path; set only when an mtls hop needs it",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_TLS_CLIENT_CA_FILE`",
+    "meaning": "private CA the api listener verifies client certificates against (never the combined bundle, which admits public CAs). Default: `ca.crt` beside `SERVTUNER_TLS_CERT_FILE`. The chart sets it when the ingress/bench-api hops are mtls, pointing at the `ca.crt` of the CA Secret (`tls.caSecretRef`, else the api certificate Secret)",
+    "values": "path; mtls only",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_TLS_BENCH_SECRET`",
+    "meaning": "name of the bench client-certificate Secret, in the runs namespace",
+    "values": "Secret name; set only when needed",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SERVTUNER_TLS_CA_SECRET`",
+    "meaning": "Secret in the runs namespace whose `ca.crt` verifies the api for bench (`servtuner run --tls-ca-file`): `tls.caSecretRef`, else the bench Secret (cert-manager writes the issuing CA into it). With `tls.caSecretRef` and a separate runs namespace, that Secret must exist in the runs namespace too",
+    "values": "Secret name; bench-api hop `mtls` only",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`POD_NAMESPACE`",
+    "meaning": "the api pod's namespace (downward API), for the RWO pod affinity to the api pod",
+    "values": "namespace",
+    "readBy": "api (runner)"
+  },
+  {
+    "name": "`SSL_CERT_FILE`",
+    "meaning": "combined system + private CA bundle built by the init container",
+    "values": "`/etc/servtuner/ca/bundle.crt`; set only when some hop is mtls",
+    "readBy": "api (standard)"
+  },
+  {
+    "name": "`SERVTUNER_DATABASE_HOST`, `_PORT`, `_NAME`, `_USER`",
+    "meaning": "Postgres connection",
+    "values": "strings",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_DATABASE_SSLMODE`",
+    "meaning": "Postgres TLS",
+    "values": "`verify-full` (client cert), `disable`",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_DATABASE_PASSWORD`",
+    "meaning": "database password; set only when the postgres hop is `platform`",
+    "values": "from a Secret",
+    "readBy": "api"
+  },
+  {
+    "name": "`X-Forwarded-Prefix`",
+    "meaning": "Context path from a proxy that strips its prefix. For that request it overrides `SERVTUNER_BASE_PATH`. The rule is in `frontend/nginx.conf.template`: each segment is 1 to 64 characters of `A-Z a-z 0-9 . _ ~ -` and is not `.` or `..`. An invalid value, or a duplicated header, is ignored and the env path is used."
+  }
+]

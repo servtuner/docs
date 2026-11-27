@@ -1,0 +1,34 @@
+---
+title: Run bundles
+description: How servtuner records a run and keeps every derived result recomputable.
+---
+
+import BundleFlowDiagram from '../../../components/BundleFlowDiagram.astro';
+
+A run bundle is a directory or object prefix with everything needed to reanalyze a run.
+
+<BundleFlowDiagram />
+
+## Principles
+
+**Raw first.** Request records and Prometheus results are written before summaries.
+
+**Recomputable.** `servtuner analyze` rebuilds derived files from raw ones. The same analyzer gives the same bytes.
+
+**Complete before visible.** Files are written atomically and `manifest.json` last, so the API does not index a half-written bundle. The manifest holds checksums.
+
+**Reproducible.** The bundle stores the submitted RunSpec byte for byte, the resolved RunSpec, versions, transport modes and the target snapshot before and after load.
+
+**No secrets.** Bundles contain Secret names only. Environment values are redacted unless allowed.
+
+## What a failed run keeps
+
+A failed step still finalizes the bundle with what was collected and the error. Optional inputs are recorded as skipped with a reason.
+
+## Versions
+
+A bundle has a format version separate from the servtuner version, and each analysis records its analyzer version.
+
+## Next steps
+
+See [each file](/reference/bundle-files/) or choose a [bundle store](/deployment/storage/).

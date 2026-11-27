@@ -1,0 +1,31 @@
+---
+import Diagram from './Diagram.astro';
+---
+
+<Diagram
+  id="arch"
+  title="servtuner architecture"
+  width={760}
+  height={400}
+  desc="The browser uses the frontend, which calls the API. The API stores metadata in Postgres and launches bench through a runner. Bench sends load to the target, queries Prometheus and writes the bundle to the store, which the API reads."
+  caption="The API launches bench. Only bench talks to the target under load and to Prometheus for measurements."
+  boxes={[
+    { x: 10, y: 20, w: 150, title: 'Frontend', lines: ['single-page app'] },
+    { x: 290, y: 20, w: 180, title: 'API', lines: ['control plane'] },
+    { x: 600, y: 20, w: 150, title: 'Postgres', lines: ['runs and metrics index'] },
+    { x: 290, y: 165, w: 180, h: 80, title: 'bench', lines: ['Kubernetes Job', 'or subprocess'], hot: true },
+    { x: 10, y: 177, w: 150, title: 'Target', lines: ['router or model server'] },
+    { x: 10, y: 320, w: 150, title: 'Prometheus', lines: ['server-side series'] },
+    { x: 600, y: 177, w: 150, title: 'Bundle store', lines: ['directory or S3'] },
+  ]}
+  arrows={[
+    { d: 'M160 48H288', label: 'REST', at: [224, 42] },
+    { d: 'M470 48H598', label: 'metadata', at: [534, 42] },
+    { d: 'M380 76V163', label: 'launch', at: [390, 125], anchor: 'start' },
+    { d: 'M290 205H162', label: 'load', at: [226, 198] },
+    { d: 'M85 318V235', label: 'scrape', at: [94, 282], anchor: 'start' },
+    { d: 'M330 245V348H162', label: 'range queries', at: [246, 342] },
+    { d: 'M470 205H598', label: 'run bundle', at: [534, 198] },
+    { d: 'M675 175 C675 115 560 70 472 66', label: 'read bundles', at: [560, 128] },
+  ]}
+/>

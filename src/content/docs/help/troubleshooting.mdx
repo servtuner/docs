@@ -1,0 +1,73 @@
+---
+title: Troubleshooting
+description: Diagnose invalid specs, failed runs, missing metrics and surprising results.
+---
+
+## Validation and launch
+
+| Symptom                       | Likely cause                                             | Do this                                                                         |
+| ----------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| `servtuner validate` exits 2  | Schema or transport error                                | Fix every listed problem                                                        |
+| Stage warnings                | The stage is short for the scrape interval or percentile | Lengthen it, or speed up the target scrape                                      |
+| Secret unavailable            | The run cannot read a named Secret                       | Put it in the runs namespace, or use `subprocess.secrets` or `--secrets-dir`    |
+| Helm says CNPG is unavailable | The operator's API is not in the cluster                 | Install it, or use external Postgres                                            |
+| Job never starts              | Anti-affinity, resources or an image problem             | Read the run's error and Job events. On one node, use `preferred` anti-affinity |
+| Exit 3                        | Target unreachable                                       | Run a connection check from the same environment                                |
+| Exit 4                        | Bundle could not be written                              | Check space, permissions and store credentials                                  |
+
+## Quality and capacity
+
+| Symptom                           | Likely cause                                   | Do this                                      |
+| --------------------------------- | ---------------------------------------------- | -------------------------------------------- |
+| `degraded` with `catalog_missing` | No Prometheus data, or no CPU limit for bench  | Add Prometheus and run bench as a Job        |
+| `client_bound`                    | bench could not keep its schedule              | Add CPU, lower the rate, or use shards       |
+| `target_saturated`                | The target fell behind                         | Treat the stage as failing. Add lower stages |
+| `insufficient_samples`            | Too few requests                               | Use longer stages or higher rates            |
+| No SLO-max                        | No stage passed, or an SLO could not be judged | Lower the rates or lengthen the stages       |
+| SLO-max equals the top stage      | The ladder never failed                        | Extend it upward                             |
+| Comparison has no winner          | Noise, or a lower-bound runner-up              | Add repeats, or extend the ladder            |
+| Knob `mismatch`                   | The target did not use the declared value      | Apply the change and rerun                   |
+
+## Metrics
+
+| Symptom                    | Do this                                                                       |
+| -------------------------- | ----------------------------------------------------------------------------- |
+| Empty Server tab           | Query the target's series in Prometheus and check the `servtuner-targets` job |
+| Empty Resources tab        | Check the snapshot permission, cAdvisor and kube-state-metrics                |
+| Empty GPU panels           | Install DCGM exporter, or accept lower confidence                             |
+| LiteLLM metrics return 401 | Give its scrape job a key                                                     |
+
+## Managed vLLM
+
+| Symptom                                                      | Do this                                                                                                                         |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
+| Deploy returns 503                                           | Use the Kubernetes runner, the servtuner binary and a listed tuning namespace                                                   |
+| Request returns 409                                          | Cancel the active session, or wait for it                                                                                       |
+| `infeasible`                                                 | Read the rule and log. Lower memory demand or parallelism                                                                       |
+| `failed`                                                     | Read the log panel. It is a deployment fault, not a configuration result                                                        |
+| Launcher refuses requests                                    | Check its token, URL and TLS mode                                                                                               |
+| Boot fails with a model download error on an offline install | Choose a mirror, a seeded claim or an object store under **Weights**                                                            |
+| Boot fails naming a FlashInfer wheel                         | Install that wheel from the kernel archive, or use the stock vLLM image. See [GPU kernels](/deployment/air-gapped/#gpu-kernels) |
+| Host deletion refused                                        | Point its managed vLLMs at another host first                                                                                   |
+
+## Access
+
+| Symptom                                               | Do this                                                                                                                                      |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| No admin can sign in                                  | Run `servtuner-api admin reset-password <user>` in the API pod. See [recover admin access](/deployment/authentication/#recover-admin-access) |
+| Sign-in refused after several tries                   | The username is locked for `auth.lockout.windowSeconds` (15 minutes by default). Wait, or have an admin reset the password                   |
+| 403 on an action                                      | Your role does not include it. See [roles](/deployment/authentication/#roles)                                                                |
+| A proxy user gets 403 "has no servtuner account"      | Link the proxy's name to a user on the **Users** page, or set `auth.forwardHeader.provisioning: viewer`                                      |
+| Sign-in works, then every request fails on plain HTTP | Set `auth.cookie.secure: false` only for a plain-HTTP install that is not on localhost                                                       |
+
+## Costs
+
+| Symptom                       | Do this                                                                                                |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------ |
+| Tokens unpriced: no datasheet | Upload one in the price book. See [token prices](/guides/costs/#token-prices)                          |
+| AWS Price List not offered    | The install is offline. Use a price table                                                              |
+| Infrastructure unpriced       | Give the price book a node type or GPU model that matches the run's nodes, or price the target or host |
+
+## Collect evidence
+
+Keep the run id, `manifest.json`, `analysis.json`, `environment.json` and the log of the run's Job (`bench-<run id>`) or process. Check them for private hostnames before you share them.

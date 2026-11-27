@@ -1,0 +1,69 @@
+---
+title: Set SLOs and find capacity
+description: Build a load ladder that brackets the highest rate your target sustains within its SLOs.
+---
+
+SLO-max is the highest trustworthy rate at which every SLO holds. A good ladder has stages on both sides of it.
+
+## Prerequisites
+
+- A [RunSpec](/guides/runspecs/) that validates.
+- SLOs that describe what your users need.
+
+## Steps
+
+1. **Set SLOs.** Use `ttft_p95` for responsiveness, `itl_p95` for stream smoothness, `e2e_p95` for total time and `max_error_rate` for failures.
+2. **Probe.** Double the rate from low to high with short stages. Find the first stage that fails.
+3. **Refine.** Place five or more stages around that point, long enough for your percentiles.
+4. **Repeat.** Run the final ladder at least three times before you trust a small difference.
+
+{/* schema: runspec */}
+
+```yaml title="ladder.yaml" {20-25}
+apiVersion: servtuner.dev/v1
+kind: RunSpec
+name: capacity-ladder
+target:
+  type: openai-compatible
+  endpoint: http://localhost:18000/v1
+  model: mock-model
+  tls: { mode: platform }
+engine: { type: loadgen }
+workload:
+  streaming: true
+  dataset:
+    type: synthetic
+    input_tokens: { mean: 128 }
+    output_tokens: { mean: 32 }
+load:
+  pacing: poisson
+  warmup: 30s
+  stages:
+    - { rate: 10, duration: 120s }
+    - { rate: 15, duration: 120s }
+    - { rate: 20, duration: 120s }
+    - { rate: 25, duration: 120s }
+    - { rate: 30, duration: 120s }
+slos: { ttft_p95: 500ms, e2e_p95: 2s, max_error_rate: 0.01 }
+```
+
+## Read the answer
+
+| You see                      | It means                                                                         |
+| ---------------------------- | -------------------------------------------------------------------------------- |
+| A failed stage above SLO-max | The limit is bracketed. servtuner may interpolate and says so                    |
+| No failed stage              | SLO-max is a lower bound. Extend the ladder upward                               |
+| No SLO-max                   | No stage could show that every SLO holds. Lower the rates or lengthen the stages |
+| A knee below SLO-max         | Headroom disappears before the SLO does                                          |
+| `target_saturated`           | The target fell behind. The stage counts as failing                              |
+| `client_bound`               | bench was the limit. The stage says nothing about the target                     |
+
+servtuner also divides SLO-max by ready replicas and GPUs when a Kubernetes snapshot supplies them.
+
+## Verify
+
+On the **Overview** tab, check that at least one valid stage meets every SLO and a higher one fails.
+
+## Next steps
+
+[Compare configurations](/guides/experiments/) or [size one replica](/guides/sizing/).

@@ -1,0 +1,94 @@
+---
+title: Benchmark Bifrost
+description: Configure a Bifrost gateway target and size its concurrency and queue.
+sidebar:
+  label: Bifrost
+---
+
+Measure Bifrost's overhead and capacity, and size a provider's concurrency and buffer.
+
+## Prerequisites
+
+- Bifrost with its telemetry plugin enabled and every pod scraped.
+- If `auth_config` is on, an admin Secret for configuration capture and a scrape job with basic auth.
+- An upstream. Use a mock with fixed latency to isolate the gateway.
+
+## Configure the target
+
+{/* schema: runspec */}
+
+```yaml title="bifrost.yaml"
+apiVersion: servtuner.dev/v1
+kind: RunSpec
+name: bifrost-concurrency-128
+experiment: bifrost-concurrency
+target:
+  type: bifrost
+  endpoint: http://bifrost.gateway.svc:8080/v1
+  model: example-provider/example-model
+  admin:
+    secretRef: { name: bifrost-admin, usernameKey: username, passwordKey: password }
+  workload:
+    namespace: gateway
+    selector: { app: bifrost }
+  upstreams:
+    - name: mock
+      endpoint: http://openai-mock.mock.svc:8000/v1
+      workload:
+        namespace: mock
+        selector: { app: openai-mock }
+      tls: { mode: platform }
+  tls: { mode: platform }
+engine: { type: loadgen }
+workload:
+  streaming: true
+  dataset:
+    type: synthetic
+    input_tokens: { mean: 128 }
+    output_tokens: { mean: 32 }
+load:
+  pacing: poisson
+  stages:
+    - { rate: 50, duration: 150s }
+    - { rate: 100, duration: 150s }
+    - { rate: 200, duration: 150s }
+    - { rate: 300, duration: 20s, is_burst: true }
+slos: { ttft_p95: 500ms, e2e_p95: 3s }
+prometheus:
+  url: http://prometheus.monitoring.svc:9090
+  tls: { mode: platform }
+```
+
+The last stage is a burst probe. It checks the recommended queue and stays out of the capacity ladder.
+
+## Run it
+
+Run each concurrency value with the same ladder. Apply the Bifrost change between runs.
+
+## Read the advisor
+
+| Rule   | What it looks for                                                  |
+| ------ | ------------------------------------------------------------------ |
+| B1     | Active requests near the provider concurrency with a flat upstream |
+| B2     | A queue larger or smaller than the SLO and bursts allow            |
+| B3     | Latency that comes from the upstream                               |
+| B4     | Retries and fallbacks                                              |
+| B6     | CPU throttling or high CPU                                         |
+| B7     | Memory close to its limit                                          |
+| B8, B9 | Logging and options that distort a benchmark                       |
+
+B5 (connection caps) is **Not built**. B1 and B3 need Bifrost's overhead histogram, which older releases do not export.
+
+For streaming requests, servtuner sizes concurrency from time to first token, because Bifrost holds a provider slot only until then. Memory is sized from the whole request.
+
+:::caution[Payload size]
+Memory per request in flight can grow far faster than the request body. If your payloads vary, run a payload series with `workload.dataset.padding_bytes` before you size memory.
+:::
+
+## Verify
+
+Check that the run captured Bifrost's configuration on the **Config** tab, and that both the pre- and post-load snapshots agree.
+
+## Next steps
+
+Review the queue derivation in [sizing](/guides/sizing/), then compare values in an [experiment](/guides/experiments/).

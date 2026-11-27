@@ -1,0 +1,113 @@
+---
+title: Price runs and compare costs
+description: Give servtuner infrastructure and token prices, and rank configurations by what they cost.
+sidebar:
+  label: Costs
+---
+
+servtuner prices a run from what you give it. It carries no price data of its own. A run copies the prices it uses into its RunSpec and bundle, so changing a price later never reprices an earlier run.
+
+There are two kinds of cost, kept apart:
+
+- **Infrastructure:** what the hardware costs while it serves. Every target type.
+- **Tokens:** what a router pays the providers behind it, per million tokens. Routers only, never a vLLM.
+
+## Prerequisites
+
+- An admin to edit prices. Viewers and operators can read them.
+- For token prices offline: a copy of the datasheet, downloaded on a connected machine.
+
+## Set prices in the price book
+
+Open **Managed vLLM → Prices**. New runs and tuning sessions copy the book into their spec as `analysis.infra_pricing` and `analysis.token_pricing`.
+
+### Infrastructure
+
+Choose a **Price source**:
+
+| Source             | Prices                                                                                                                                  |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------- |
+| **Price table**    | Node types per hour, with their allocatable CPU, memory and GPUs, so a pod's share can be computed; or GPU models per GPU-hour          |
+| **AWS Price List** | The on-demand price of each node's instance type in a region. Not offered on an [offline install](/deployment/air-gapped/#offline-mode) |
+| **None**           | No infrastructure cost                                                                                                                  |
+
+A **discount multiplier** applies to every price, for Spot, reserved instances or Savings Plans. With AWS prices, bench needs `pricing:GetProducts`. See [storage](/deployment/storage/).
+
+A vLLM on a host is priced by its [host](/guides/managed-vllm/#hosts) instead: per hour, or owned hardware spread over its life plus electricity.
+
+### Token prices
+
+Token prices come from a datasheet in LiteLLM's model-price format.
+
+1. Download `https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json` on a machine with internet access.
+2. Select **Upload datasheet**, or send it with `PUT /price-book/datasheet`.
+
+Or host the file inside your network and enter its address under **Edit prices → Token-price datasheet URL**.
+
+To refresh prices, upload the new file with **Replace datasheet**. Earlier runs keep the copy they used.
+
+## Price a saved target
+
+A target servtuner does not manage has no node to price it by, so its owner says how it is paid for, on the target's form:
+
+- **By the hour:** the host it runs on, or a node type from the price book with the GPUs it uses.
+- **By the token:** the datasheet, or prices given per million input and output tokens, for a private API no datasheet lists.
+
+A router can have both. **New run** copies the target's prices into the new spec.
+
+## In a RunSpec
+
+{/* schema: runspec */}
+
+```yaml title="Pricing in a RunSpec"
+apiVersion: servtuner.dev/v1
+kind: RunSpec
+name: priced-run
+target:
+  type: openai-compatible
+  endpoint: http://router.inference.svc:4000/v1
+  model: gpt-4o-mini
+  tls: { mode: platform }
+engine: { type: loadgen }
+workload:
+  api: chat
+  streaming: true
+  dataset: { type: synthetic, input_tokens: { mean: 256 }, output_tokens: { mean: 128 } }
+load:
+  stages:
+    - { rate: 10, duration: 120s }
+slos: { ttft_p95: 1s }
+analysis:
+  infra_pricing:
+    source: static
+    static:
+      nodes:
+        local: { usd_per_hour: 2.5, cores: 16, memory_gib: 64, gpus: 1 }
+  token_pricing:
+    source: manual
+    manual: { usd_per_1m_input_tokens: 0.15, usd_per_1m_output_tokens: 0.6 }
+```
+
+- `token_pricing.source: datasheet` fetches the datasheet once at the start of the run and keeps it in the bundle. By default it takes the price book's (`from_price_book`), else a Bifrost target's own pricing URL, else Bifrost's public datasheet. An offline run never fetches the public one.
+- `token_pricing.url` names a datasheet of your own instead.
+
+See every field in the [RunSpec reference](/reference/runspec/).
+
+## Read and compare costs
+
+- A run's **Overview** shows the infrastructure price per replica-hour, the infrastructure and token cost per 1,000 requests and per million output tokens at its SLO-max, and where token prices came from: "prices as of" the datasheet's date, and whether it came from the price book. Hover a line to see how it was worked out.
+- A run without the prices it needs says which cost is unpriced, and why.
+- [Experiments](/guides/experiments/) and [tuning sessions](/guides/tuning-sessions/) can rank configurations by cost:
+
+| Objective                         | Meaning                                           |
+| --------------------------------- | ------------------------------------------------- |
+| `infra_cost_per_1k_requests`      | Infrastructure cost per 1,000 requests at SLO-max |
+| `infra_cost_per_1m_output_tokens` | Infrastructure cost per million output tokens     |
+| `cost_per_1k_requests`            | Token cost per 1,000 requests                     |
+| `cost_per_1m_output_tokens`       | Token cost per million output tokens              |
+
+Lower is better for all four. A run without the prices an objective needs has no value for it, and the comparison gives the reason.
+
+## Licensing
+
+servtuner bundles no price data, and never AWS Price List data. You supply every price, from a source whose terms you have accepted.

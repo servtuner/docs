@@ -1,0 +1,42 @@
+---
+title: Trustworthy RPS
+description: Why servtuner accepts or excludes a stage, and how it separates client limits from target limits.
+---
+
+A load generator can be the bottleneck. A number from such a stage describes the client, so servtuner reports it but does not use it.
+
+## Open-loop load
+
+`loadgen` schedules each request ahead of time and does not wait for earlier responses before sending the next. A slow target therefore builds up requests in flight, as it would in production. _Send lag_ is how late a request left compared with its schedule.
+
+## When a stage is valid
+
+| Check                     | Default                                                |
+| ------------------------- | ------------------------------------------------------ |
+| Achieved over offered RPS | At least 97% (Poisson pacing allows for random counts) |
+| p99 send lag              | Under 50 ms                                            |
+| Client bound              | Not detected                                           |
+
+You can change the first two in `analysis.stage_validity`.
+
+## Who was the bottleneck?
+
+| Code               | Evidence                                                                           | Effect                                  |
+| ------------------ | ---------------------------------------------------------------------------------- | --------------------------------------- |
+| `client_bound`     | Send lag grows, or bench is at 90% of its CPU limit or throttled                   | Excluded                                |
+| `target_saturated` | Lag grows while bench has CPU to spare and requests in flight reach 95% of the cap | Excluded, and counts as a failing stage |
+| `target_stalled`   | vLLM produced no tokens for half a stage while requests ran                        | Excluded. The run leaves comparisons    |
+
+Without a CPU limit and Prometheus data for bench, the client check rests on send lag alone and the run is graded degraded.
+
+## Enough samples
+
+p50 and p90 need 100 requests, p95 needs 200 and p99 needs 1,000. servtuner reports the reason instead of a number when there are too few. An SLO that cannot be judged does not count as met.
+
+## What must match
+
+RPS depends on the request mix. servtuner compares rates only when the workload hashes match, and reports token throughput beside every rate.
+
+## Measured ceiling
+
+On one 16-core development host, loadgen sustained 5,000 RPS of short streaming requests with 2 CPUs and 2.6 ms p99 send lag. At 10,000 RPS, p99 lag was 48 ms, just under the limit. Measure your own environment, and use [shards](/concepts/engines/#sharding) beyond it.

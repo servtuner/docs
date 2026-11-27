@@ -1,0 +1,31 @@
+---
+import Diagram from './Diagram.astro';
+---
+
+<Diagram
+  id="tune"
+  title="Tuning loop"
+  width={760}
+  height={300}
+  desc="Propose chooses a configuration. servtuner deploys it and waits for readiness. A configuration that cannot boot becomes an infeasible result. A ready one is benchmarked and analyzed. Both results go back to propose until the search is done, and the session returns a recommended command line."
+  caption="A failed boot is evidence for the next proposal, not a session failure."
+  boxes={[
+    { x: 10, y: 40, w: 150, title: 'Propose', lines: ['next configuration'], hot: true },
+    { x: 210, y: 40, w: 150, title: 'Deploy', lines: ['flags from knobs'] },
+    { x: 410, y: 40, w: 150, title: 'Boot', lines: ['readiness gate'] },
+    { x: 610, y: 40, w: 140, title: 'Run', lines: ['ordinary RunSpec'] },
+    { x: 610, y: 160, w: 140, title: 'Analyze', lines: ['objective and SLOs'] },
+    { x: 410, y: 160, w: 150, title: 'Boot result', lines: ['KV capacity or reason'] },
+    { x: 10, y: 225, w: 200, title: 'Recommended command', lines: ['with evidence'], hot: true },
+  ]}
+  arrows={[
+    { d: 'M160 68H208' },
+    { d: 'M360 68H408' },
+    { d: 'M560 68H608', label: 'ready', at: [584, 60] },
+    { d: 'M680 96V158' },
+    { d: 'M485 96V158', label: 'probe or infeasible', at: [478, 132], anchor: 'end' },
+    { d: 'M410 188H100V98', label: 'evidence', at: [255, 182] },
+    { d: 'M680 216V262H300V190', dashed: true, label: 'evidence', at: [490, 256] },
+    { d: 'M50 96V223', label: 'done', at: [42, 165], anchor: 'end' },
+  ]}
+/>

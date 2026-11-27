@@ -1,0 +1,103 @@
+---
+title: Configure Prometheus
+description: Scrape targets at benchmark resolution without changing the global interval.
+sidebar:
+  label: Prometheus
+---
+
+Prometheus explains results and supplies resource usage. Client metrics do not depend on it.
+
+## Prerequisites
+
+- A Prometheus that bench can query.
+- Permission to add scrape jobs or monitors.
+
+## Recommended intervals
+
+| Source             | Interval                                         |
+| ------------------ | ------------------------------------------------ |
+| Targets under test | 5s, with a 4s timeout                            |
+| cAdvisor           | 10–15s for target and bench namespaces           |
+| kube-state-metrics | 15–30s                                           |
+| DCGM exporter      | 5–10s, with its own collection interval to match |
+
+Leave the global interval alone. Target histograms make short global intervals expensive.
+
+## Community chart
+
+Merge the jobs in `deploy/prometheus/` into your existing `extraScrapeConfigs`. The value is one string, so applying a snippet alone replaces your other jobs.
+
+Opt a pod in with labels and annotations:
+
+```yaml
+metadata:
+  labels:
+    servtuner.dev/scrape: 'true'
+  annotations:
+    servtuner.dev/metrics-port: '8000'
+    servtuner.dev/metrics-path: /metrics
+    servtuner.dev/metrics-scheme: http
+```
+
+servtuner's target catalogs select the job `servtuner-targets`. A separate job is needed for each target that requires credentials.
+
+## Prometheus Operator
+
+Create a PodMonitor or ServiceMonitor with a 5-second interval for your own targets. Give the pods the label `servtuner.dev/scrape-job: servtuner-targets` and use it as `jobLabel`, so the series land in the expected job:
+
+```yaml title="podmonitor.yaml"
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+  name: gateway
+  namespace: gateway
+spec:
+  jobLabel: servtuner.dev/scrape-job
+  selector:
+    matchLabels:
+      app: gateway
+  podMetricsEndpoints:
+    - port: http
+      path: /metrics
+      interval: 5s
+      scrapeTimeout: 4s
+```
+
+The chart creates no monitors for targets you own. servtuner creates a PodMonitor for each managed vLLM on Kubernetes.
+
+## Off-cluster targets
+
+Scrape the host in a job such as `servtuner-external` with stable `namespace` and `pod` labels. Name the same labels in `target.metrics`:
+
+{/* schema: runspec */}
+
+```yaml title="off-cluster.yaml" {8-11}
+apiVersion: servtuner.dev/v1
+kind: RunSpec
+name: off-cluster-vllm
+target:
+  type: vllm
+  endpoint: http://vllm-host.example:8000/v1
+  model: example/model
+  metrics:
+    job: servtuner-external
+    namespace: servtuner-external
+    pod: vllm-host
+  tls: { mode: platform }
+engine: { type: loadgen }
+workload: { preset: chat-short@1, streaming: true }
+load:
+  stages:
+    - { rate: 4, duration: 120s }
+prometheus:
+  url: http://prometheus.monitoring.svc:9090
+  tls: { mode: platform }
+```
+
+## Verify
+
+Query `up{job="servtuner-targets"}`. Every target pod should be 1. Check that `scrape_duration_seconds` stays well below the timeout. Then run `servtuner validate`, which warns when a stage is too short for the discovered interval.
+
+## Next steps
+
+Learn what each [metric](/concepts/metrics/) means.

@@ -1,0 +1,120 @@
+---
+title: Manage a vLLM target
+description: Let servtuner deploy a vLLM it owns, on Kubernetes or on a GPU host, and choose where its weights come from.
+---
+
+A managed vLLM is the only workload servtuner deploys and reconfigures. Use **Targets** for a server you run yourself.
+
+## Prerequisites
+
+On Kubernetes:
+
+- The `kubernetes` runner and a namespace listed in `rbac.tuning.namespaces`.
+- One node with enough GPUs. Multi-node serving is not supported.
+- The Prometheus Operator, or `tuning.monitor: scrape-annotations`.
+
+On a GPU host:
+
+- [`servtuner launcher`](/deployment/launcher/) running on the host.
+- A token for the launcher, and network access to it from the API and bench.
+- A Prometheus job that labels the host's series.
+
+## Steps
+
+1. Open **Managed vLLM** and add a target. Choose **Kubernetes** or **A host with servtuner launcher**.
+2. Enter a pinned image (Kubernetes) or the host, then the model, resources, [weights](#model-sources) and base flags. servtuner refuses flags it owns, such as the model, host, port and TLS flags.
+3. Select **Deploy** with a set of [knobs](#knobs).
+4. Wait for readiness. The states are `pending`, `ready`, `infeasible` and `failed`.
+5. Select **Benchmark** to open New run with the target filled in.
+6. Select **Scale to zero** when finished.
+
+{/* schema: openapi:ManagedTargetCreate */}
+
+```json title="POST /managed-targets"
+{
+  "name": "demo-vllm",
+  "namespace": "servtuner-tune-demo",
+  "spec": {
+    "placement": "kubernetes",
+    "image": "vllm/vllm-openai:v0.34.0",
+    "model": "example/model",
+    "gpus": 1,
+    "cpu": "8",
+    "memory": "32Gi",
+    "model_cache": { "size": "100Gi" },
+    "transport": { "mode": "platform" }
+  }
+}
+```
+
+## Model sources
+
+The **Weights** field says where vLLM reads the model from. The first two download into a cache volume servtuner creates (`model_cache`); the other two need none.
+
+| Weights                              | `model_source.kind` | What happens                                                                                                                                                                             |
+| ------------------------------------ | ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Download from Hugging Face**       | `hub` (default)     | vLLM downloads the model into the cache. Name a `hf_token` Secret for gated models                                                                                                       |
+| **Download from an internal mirror** | `mirror`            | The same, from any Hugging Face mirror vLLM can reach (`endpoint`, set as `HF_ENDPOINT`)                                                                                                 |
+| **Read from a seeded claim**         | `pvc`               | vLLM reads a PVC you filled once (`claim`) and never downloads (`HF_HUB_OFFLINE=1`). servtuner never deletes the claim. See [air-gapped installs](/deployment/air-gapped/#model-weights) |
+| **Stream from an object store**      | `object_store`      | vLLM streams safetensors from `s3://`, `gs://` or `az://` (`uri`) straight into GPU memory with its Run:ai Model Streamer. Nothing is copied to a volume first                           |
+
+For an object store:
+
+- The location holds the model's config and tokenizer files too, laid out as on Hugging Face. servtuner assumes someone else put them there.
+- For an S3-compatible store, give its `endpoint`.
+- Name a Secret with the access keys in `credentials` (keys `access_key_id` and `secret_access_key` by default), or leave it out to use the pod's own identity: EKS Pod Identity, IRSA or GKE Workload Identity. `gs://` and `az://` always use the pod's identity.
+
+{/* schema: openapi:ManagedTargetCreate */}
+
+```json title="Weights from S3, with the pod's identity"
+{
+  "name": "qwen-s3",
+  "namespace": "servtuner-tune-demo",
+  "spec": {
+    "placement": "kubernetes",
+    "image": "vllm/vllm-openai:v0.34.0",
+    "model": "Qwen/Qwen2.5-0.5B-Instruct",
+    "gpus": 1,
+    "cpu": "8",
+    "memory": "32Gi",
+    "model_source": { "kind": "object_store", "uri": "s3://models/qwen2.5-0.5b-instruct/" }
+  }
+}
+```
+
+A model that is not where the source says fails the boot, and the target's page shows the reason from vLLM's log.
+
+## Knobs
+
+Every vLLM flag is a knob, read from vLLM's own source at the pinned version, with its description, kind, default and limits. `servtuner knobs` prints the catalog, and `GET /knobs` serves it.
+
+- **Deploy** and **New session** show knobs as chips. Select one to edit its value within vLLM's limits, or **Add a knob** to pick from the catalog by name or flag.
+- **Base flags** are set on every deployment and never tuned. A knob you tune may not also be a base flag.
+- `servtuner vllm-args` turns a set of knobs into the `vllm serve` arguments servtuner would use.
+
+Kubernetes targets also take plain environment variables (`env`, never a secret) and a `/dev/shm` size (`shm_size`) for tensor-parallel workers.
+
+## Hosts
+
+A **host** records a GPU machine outside Kubernetes: its hardware and its price. Hosts are listed under **Managed vLLM**, each with its own page.
+
+- **Read from the launcher** fills in the hardware (GPUs, CPU, memory) from a host target's launcher.
+- The price is **Per hour**, or **Owned hardware**: the purchase price spread over its life in hours, plus power in watts times your electricity price.
+- A host target names its host. Its runs then know their GPUs, so they can rank by per-GPU objectives, and are priced by the host. See [costs](/guides/costs/).
+- A host cannot be deleted while a managed vLLM runs on it. Past runs keep what they recorded.
+
+## Ownership and safety
+
+- Every object carries `app.kubernetes.io/managed-by: servtuner` and `servtuner.dev/managed-target`. servtuner refuses to patch an object without both.
+- Transport is `platform` by default. `tls` gives each target its own server certificate. `mtls` is not offered.
+- An infeasible boot, such as too little GPU memory for the KV cache, is a result about the configuration.
+- While a tuning session uses the target, deploy, edit, scale-down and delete return 409.
+- Deleting a target removes what servtuner deployed and keeps the model cache volume and any seeded claim.
+
+## Verify
+
+Readiness must be `ready`. The log panel shows the end of vLLM's log, including the last exit of a crashing pod.
+
+## Next steps
+
+Start a [tuning session](/guides/tuning-sessions/).

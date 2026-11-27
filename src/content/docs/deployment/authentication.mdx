@@ -1,0 +1,105 @@
+---
+title: Set up authentication
+description: Sign users in with local accounts or a trusted proxy, give them roles, and recover admin access.
+sidebar:
+  label: Authentication
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+servtuner checks every API request. Each user has one role, and a role is a fixed set of actions. Users sign in with a password, or through a proxy in front of the API that names them. A bench Job uses neither: it gets a token scoped to its own run.
+
+## Prerequisites
+
+- servtuner installed with the chart. See [Kubernetes](/deployment/helm/).
+- For proxy sign-in: oauth2-proxy, your gateway's external authorization, or an ingress that verifies client certificates.
+
+## Create the first admin
+
+The chart creates a setup token in a Secret and keeps it across upgrades. Read it:
+
+```sh
+kubectl -n servtuner get secret servtuner-setup-token -o jsonpath='{.data.token}' | base64 -d
+```
+
+The name is `<release>-setup-token`; the install's notes print the exact command. To use your own Secret, set `auth.setupToken.existingSecret` (and `auth.setupToken.key`).
+
+Open servtuner, enter the token, and choose the admin's username and password. The token works only while no admin exists.
+
+## Roles
+
+| Role     | Can                                                                                                                                                             |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Viewer   | Read everything: runs, experiments, plans, targets, schedules, tuning sessions and prices                                                                       |
+| Operator | Also start and cancel runs, tuning sessions and schedules; analyze experiments; save scenarios; check targets; read a managed vLLM's log                        |
+| Admin    | Also save and delete targets, hosts and managed targets; set credentials; edit the price book; delete runs and experiments; manage users and read the audit log |
+
+Routes check actions, never role names. A request without the action gets 403.
+
+## Sign-in methods
+
+`auth.methods` lists the methods in the order they are tried.
+
+<Tabs>
+  <TabItem label="Local accounts">
+
+`local` (the default) signs users in with a username and password. Passwords are hashed with Argon2id. Sessions are stored on the server, and the browser holds only the `__Host-servtuner_session` cookie.
+
+| Value                                  | Default      | Meaning                                        |
+| -------------------------------------- | ------------ | ---------------------------------------------- |
+| `auth.session.idleTimeoutSeconds`      | 43200 (12 h) | A session unused this long ends                |
+| `auth.session.absoluteLifetimeSeconds` | 604800 (7 d) | A session ends this long after sign-in         |
+| `auth.lockout.maxFailures`             | 5            | Failed sign-ins per username before a lock     |
+| `auth.lockout.windowSeconds`           | 900          | The counting window, and how long a lock lasts |
+| `auth.cookie.secure`                   | `true`       | `false` only for plain HTTP not on localhost   |
+
+  </TabItem>
+  <TabItem label="Trusted proxy">
+
+`forward_header` takes the user's name from a header your proxy sets, `auth.forwardHeader.userHeader` (default `X-Forwarded-User`). The name is matched exactly to an identity linked to a servtuner user on the **Users** page.
+
+**The API trusts that header from whatever reaches it.** Your proxy must overwrite any copy the client sends, and `networkPolicy.enabled` must keep everything else away from the API.
+
+`auth.forwardHeader.provisioning` decides what an unknown name gets: `refuse` (the default) or a new `viewer` account.
+
+- **oauth2-proxy with ingress-nginx:** annotate the API Ingress with `nginx.ingress.kubernetes.io/auth-url: http://oauth2-proxy.<ns>.svc/oauth2/auth`, `auth-signin: https://<host>/oauth2/start?rd=$escaped_request_uri` and `auth-response-headers: X-Auth-Request-User`. Set `userHeader: X-Auth-Request-User`.
+- **Envoy Gateway:** set `gateway.envoy.extAuth.enabled` and name your auth service in `gateway.envoy.extAuth.service`. The chart renders a `SecurityPolicy` that replaces any client copy of the header. oauth2-proxy also needs `headersToExtAuth: [cookie]`.
+- **Client certificates:** let the ingress verify them, and pass the subject DN in the user header.
+
+      </TabItem>
+
+  </Tabs>
+
+## Manage users
+
+Admins manage users on the **Users** page:
+
+- create a user with a role, and a temporary password, proxy identities, or both;
+- change a role, or disable a user; either signs the user out everywhere;
+- reset a password: the user must change it at the next sign-in;
+- link or unlink proxy identities;
+- sign a user out everywhere.
+
+servtuner never lets you remove the last admin. Each user sees and ends their own sessions, and changes their password, on their **Account** page.
+
+The **audit log** on the same page records sign-ins, failures and lockouts, setup, sign-outs, password changes, sessions ended, proxy sign-ins and provisioning, and every change an admin makes to a user. It never records a secret.
+
+## Recover admin access
+
+From inside the API pod:
+
+```sh
+kubectl -n servtuner exec deploy/servtuner-api -- servtuner-api admin reset-password <user>
+kubectl -n servtuner exec deploy/servtuner-api -- servtuner-api admin set-role <user> admin
+kubectl -n servtuner exec deploy/servtuner-api -- servtuner-api admin enable <user>
+```
+
+`reset-password` prints a temporary password that must be changed at sign-in.
+
+## Turn checks off
+
+`auth.mode: none` checks nothing: every request may do everything. Use it only where something else controls who reaches servtuner, such as a single-user machine.
+
+## Verify
+
+Sign in as the admin, create a viewer, and sign in as that viewer in a private window: **New run** is not offered, and the API answers 403 to a run.

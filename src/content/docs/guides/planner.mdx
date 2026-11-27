@@ -1,0 +1,57 @@
+---
+title: Plan capacity and scenarios
+description: Plan replicas for a traffic level and test overrides against measured curves.
+---
+
+The planner combines a traffic profile and SLOs with measured capacity models. It never plans a replica busier than you measured.
+
+## Prerequisites
+
+- One or more analyzed runs with `capacity_model.json` and the percentiles your SLOs need.
+- A known ready replica count in each run, which comes from a Kubernetes snapshot. Without it, the plan is blocked.
+
+## Steps
+
+1. Open **Planner** and choose runs.
+2. Enter peak RPS and SLOs. Optionally add baseline RPS, zones, a spare and minimum replicas.
+3. Read replicas, totals, autoscaling bounds and sensitivity.
+4. Expand a calculation. Override a parameter or pin a value, and read the checks it causes.
+5. Save the inputs as a named scenario.
+
+From the command line:
+
+{/* schema: plan-request */}
+
+```json title="plan-request.json"
+{
+  "peak_rps": 100,
+  "baseline_rps": 20,
+  "slos": { "e2e_p95": "2s" },
+  "availability": { "min_replicas": 2, "spare": true, "zones": 3 }
+}
+```
+
+```sh
+servtuner plan --input plan-request.json --models runs/a/capacity_model.json --out-dir plan
+```
+
+## Read the checks
+
+| Status              | Meaning                                                               |
+| ------------------- | --------------------------------------------------------------------- |
+| `ok`                | Consistent with the measurements                                      |
+| `warning`           | Possible, with a stated risk                                          |
+| `violates_measured` | Contradicts a measurement                                             |
+| `blocked`           | Breaks a guard rail, for example a replica above its measured SLO-max |
+
+Scale-out is _unverified_ until you measure at least two replica counts and per-replica SLO-max agrees within 10%.
+
+Saved scenarios keep inputs, not results. Reopening one recomputes it from current bundles. Node bin-packing, plan cost and combined router-plus-model chains are **Not built**.
+
+## Verify
+
+Set an override back to its default. The plan should return to the baseline.
+
+## Next steps
+
+Apply the exported values to your own deployment, then benchmark it at the planned replica count.

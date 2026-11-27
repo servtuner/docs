@@ -1,0 +1,28 @@
+---
+title: Follow up recommendations
+description: Turn a recommended knob value into a run that tests it.
+---
+
+A recommendation from one run is a hypothesis. A follow-up run tests it.
+
+## Prerequisites
+
+- A finished run with a knob recommendation that has a value.
+- Permission to change the target.
+
+## Steps
+
+1. Open **Recommendations** and create a follow-up from a knob recommendation.
+2. servtuner creates a run in `awaiting_config`. It does not launch yet.
+3. Apply the suggested patch to your target, and wait until the target is ready.
+4. Select **I've applied it** on the run page. servtuner launches the run.
+
+The API calls are [`POST /runs/{run_id}/followup` and `POST /runs/{run_id}/confirm-applied`](/reference/api/runs/).
+
+## Verify
+
+Check **Config** on the new run. The captured value should match the new knob. If servtuner cannot capture that knob, it is `unverified`.
+
+## Next steps
+
+Add repeats and [compare them as an experiment](/guides/experiments/).

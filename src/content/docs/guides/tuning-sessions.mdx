@@ -1,0 +1,89 @@
+---
+title: Run a tuning session
+description: Search vLLM flags for one model, GPU setup, workload and set of SLOs.
+---
+
+import TuningLoopDiagram from '../../../components/TuningLoopDiagram.astro';
+
+A session deploys configurations of a managed vLLM, benchmarks them and proposes the next. It ends with a recommended `vllm serve` command.
+
+<TuningLoopDiagram />
+
+## Prerequisites
+
+- A [managed vLLM](/guides/managed-vllm/) whose base flags do not set the knobs you tune.
+- A [workload preset](/guides/workload-presets/) and SLOs.
+- No other active session. Only one runs at a time.
+
+## Steps
+
+1. Open **Tuning** and start a session.
+2. Choose the managed vLLM and preset. Review the SLOs it fills in.
+3. Under **Start from**, pick one of the starting spaces that fit the target, such as `single-gpu` or `two-gpu-tensor-parallel`, and edit it. Tuned knobs show as chips; the YAML holds the rest.
+4. Set **Fixed knobs**, set on every configuration and never tuned.
+5. Optionally, under **Reuse earlier sessions**, pick sessions whose boots and runs this one should build on.
+6. Set a budget in runs and hours, and choose **Run on their own** or **Wait for my approval**.
+7. Start it. With approval, select **Run this step** for each step.
+
+{/* schema: search-space */}
+
+```yaml title="Search space"
+min_concurrency: 32
+knobs:
+  - { name: vllm.tensor_parallel_size, tier: feasibility, values: [1, 2] }
+  - { name: vllm.max_num_seqs, tier: scheduler, min: 64, max: 512, default: 128 }
+  - { name: vllm.max_num_batched_tokens, tier: scheduler, min: 2048, max: 16384, default: 8192 }
+confirm: { top: 2, repeats: 3 }
+```
+
+## How the search works
+
+| Tier        | What it does                                                              |
+| ----------- | ------------------------------------------------------------------------- |
+| Feasibility | Boots each combination with no load and reads its KV capacity             |
+| Structural  | Compares each surviving parallelism or quantization value with the leader |
+| Scheduler   | Follows advisor moves, then steps one knob at a time                      |
+| Fine tuning | Tests smaller settings against the leader                                 |
+| Confirm     | Repeats the top configurations on a full ladder                           |
+
+A challenger leads only when it beats the leader by more than the noise floor (5% by default).
+
+## Starting spaces
+
+`servtuner spaces` lists the starting spaces built into servtuner, and `GET /search-spaces` serves them. Each says which targets it fits (placement and GPU count), and New session offers only those. The space stays editable; servtuner checks it when the session starts.
+
+## Objectives
+
+The space's `objective` is what the session ranks by. Which objectives it may use depends on what the target's runs can know:
+
+| Target                             | Objectives                                                                                                                              |
+| ---------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Kubernetes, with GPUs              | `slo_rps_per_gpu` (default), `slo_max_rps`, `slo_rps_per_replica`, `slo_rps_per_core`, `tokens_per_s_per_gpu`, `p95_ttft_at_target_rps` |
+| Kubernetes, CPU only               | `slo_max_rps` (default), `slo_rps_per_replica`, `slo_rps_per_core`, `p95_ttft_at_target_rps`                                            |
+| Host                               | `slo_max_rps` (default), `p95_ttft_at_target_rps`; with the host's hardware also the per-GPU and per-replica objectives                 |
+| Any target whose runs carry prices | Also `infra_cost_per_1k_requests` and `infra_cost_per_1m_output_tokens`                                                                 |
+
+A session refuses an objective its target's runs cannot compute, and says which it can use.
+
+## Reuse earlier sessions
+
+A session can start from earlier sessions' boot results and runs instead of measuring them again. servtuner accepts an earlier session only when it describes the same thing: the same managed target, preset and SLOs, with the target not edited since it started. For a host target, the vLLM installed on the host must also be the same version.
+
+## Read the outcome
+
+- **Confirmed winner:** the confirmation runs separate it from the others.
+- **No significant winner:** the best configuration is named, but the lead may be noise.
+- **Budget spent:** the leader so far, marked unconfirmed.
+- **No feasible configuration** or **no SLO met:** change the space, SLOs or hardware.
+
+Every ending scales the target to zero. The recommendation lists its command, runs, the configurations that did not boot and, for Kubernetes, a deployment patch.
+
+The session also compares all of its runs, as an [experiment comparison](/guides/experiments/) does, and shows the **Pareto set** of its objective against p95 TTFT: the configurations where neither can improve without the other getting worse. When that comparison cannot run, the session says why, and the recommendation still stands.
+
+## Verify
+
+Open the session's experiment and check that the repeats succeeded and the knobs match. Treat an unconfirmed result as a hypothesis.
+
+## Next steps
+
+Apply the command to your own vLLM, then rerun the preset to [confirm it](/guides/experiments/).

@@ -1,0 +1,18 @@
+name: chat-multiturn
+version: 1
+description: 'Six-turn chat, 256 tokens in and 256 out per turn. A growing context that exercises the prefix cache. Built by loadgen.'
+engines: [loadgen]
+workload:
+  api: chat
+  dataset:
+    type: synthetic
+    input_tokens: { mean: 256 }
+    output_tokens: { mean: 256 }
+  conversation: { turns: 6 }
+slos:
+  ttft_p95: 800ms
+  itl_p95: 50ms
+rps_hint:
+  - { gpu_class: rtx-3070-8gb, start_rps: 4 }
+  - { gpu_class: a100-80gb, start_rps: 6 }
+  - { gpu_class: h100-80gb, start_rps: 12 }

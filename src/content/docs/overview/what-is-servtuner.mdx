@@ -1,0 +1,38 @@
+---
+title: What is servtuner?
+description: What servtuner measures, what it decides from the measurements, and what it does not do.
+---
+
+servtuner is a benchmarking platform for LLM serving on Kubernetes. It load tests vLLM, LiteLLM, Bifrost and other OpenAI-compatible servers, records each benchmark as a reproducible run, and compares runs to find a configuration and a resource size.
+
+## Questions it answers
+
+- What is the highest request rate this target sustains within its service-level objectives (SLOs)?
+- How do latency and throughput change as load rises?
+- Which configuration gives the best result, and is the lead larger than the noise?
+- How much CPU, memory and GPU memory does one replica need?
+- How many replicas does a traffic level need?
+
+## How it answers them
+
+| Step     | What happens                                                                            |
+| -------- | --------------------------------------------------------------------------------------- |
+| Describe | You write a [RunSpec](/guides/runspecs/): target, workload, load, SLOs.                 |
+| Run      | `servtuner run` sends open-loop load and writes a [run bundle](/concepts/run-bundles/). |
+| Check    | A quality gate excludes stages that cannot be [trusted](/concepts/trustworthy-rps/).    |
+| Analyze  | The analyzer computes latency, SLO-max, sizing and recommendations from raw files.      |
+| Decide   | You [compare runs](/guides/experiments/) and [plan capacity](/guides/planner/).         |
+
+## What it does not do
+
+- It does not evaluate model quality or accuracy.
+- It does not replace production dashboards.
+- It does not deploy or change the targets you own. The exception is a [managed vLLM](/guides/managed-vllm/), which servtuner creates itself in a namespace you set aside.
+
+:::note[About this documentation]
+These pages describe one commit of servtuner, named on every generated reference page. Anything not built at that commit is labelled **Not built**.
+:::
+
+## Next steps
+
+Read the [architecture](/overview/architecture/), or go straight to your [first run](/quickstart/first-run/).

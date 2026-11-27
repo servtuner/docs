@@ -1,0 +1,50 @@
+---
+title: Architecture
+description: The components of servtuner, what each one owns, and the contracts between them.
+---
+
+import ArchitectureDiagram from '../../../components/ArchitectureDiagram.astro';
+import RunLifecycleDiagram from '../../../components/RunLifecycleDiagram.astro';
+
+<ArchitectureDiagram />
+
+## Components
+
+| Component  | Language                 | Owns                                                               | Runs as                                              |
+| ---------- | ------------------------ | ------------------------------------------------------------------ | ---------------------------------------------------- |
+| `bench`    | Go (the `servtuner` CLI) | Load, snapshots, Prometheus queries, analysis and bundles          | A Kubernetes Job, or a local process                 |
+| API        | Python, FastAPI          | Run records, launching, status, the metrics index, managed targets | A Deployment                                         |
+| Frontend   | TypeScript, React        | The browser interface                                              | Static files served by nginx                         |
+| Schemas    | JSON Schema              | RunSpecs, bundle files and status events                           | Source for generated Go, Python and TypeScript types |
+| Helm chart | Helm                     | Installation, RBAC, certificates and storage                       | Your cluster                                         |
+
+## Contracts
+
+**The API and bench share a command line and files.** The API runs `servtuner run --spec <file> --out <location>`. A Job pod and a local process run the same command. The `servtuner` CLI also works with no API at all.
+
+**The bundle is the source of truth.** `bench` writes raw request records and Prometheus series before any summary. Postgres holds an index that can be rebuilt from bundles.
+
+**Analysis lives in one place.** The API and the frontend display results. They never recompute them.
+
+**Secrets are named, never stored.** A RunSpec references Kubernetes Secrets by name. Captured environment variables are redacted.
+
+## Runners
+
+A runner launches bench for the API.
+
+| Runner       | Use it for                | Behavior                                                                                       |
+| ------------ | ------------------------- | ---------------------------------------------------------------------------------------------- |
+| `kubernetes` | Clusters (chart default)  | One Job per run with no retries, guaranteed QoS and anti-affinity from the workload under test |
+| `subprocess` | Development, one node, CI | bench runs inside the API process environment                                                  |
+
+## Run lifecycle
+
+<RunLifecycleDiagram />
+
+A [follow-up run](/guides/follow-ups/) starts in `awaiting_config` until you confirm that the change is applied.
+
+bench posts progress events with a token scoped to the run. Delivery problems never fail a run. The Job or process exit status is authoritative, so a pod killed for memory still ends as `failed`. After an API restart, the Kubernetes runner finds its Jobs again. The subprocess runner reports its interrupted runs as failed.
+
+## Next steps
+
+Learn the [core concepts](/overview/core-concepts/), or choose a [deployment](/deployment/).

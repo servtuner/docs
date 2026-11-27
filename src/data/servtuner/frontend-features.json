@@ -1,0 +1,18 @@
+[
+  "auth",
+  "compare",
+  "experiments",
+  "followup",
+  "hosts",
+  "knobs",
+  "managed-targets",
+  "new-run",
+  "overview",
+  "planner",
+  "run-detail",
+  "runs",
+  "schedules",
+  "targets",
+  "tuning",
+  "users"
+]

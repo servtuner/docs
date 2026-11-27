@@ -1,0 +1,39 @@
+:root {
+  --sl-nav-height: 6.25rem;
+  --sl-content-width: 48rem;
+  --sl-color-accent-low: #13244d;
+  --sl-color-accent: #4d7cfe;
+  --sl-color-accent-high: #c3d3ff;
+  --dg-box: #18202f;
+  --dg-edge: #5d7196;
+  --dg-hot: #ff9d5c;
+  --dg-hot-box: #33241b;
+}
+:root[data-theme='light'] {
+  --sl-color-accent-low: #dbe5ff;
+  --sl-color-accent: #2554d8;
+  --sl-color-accent-high: #16317f;
+  --dg-box: #f3f6fc;
+  --dg-edge: #61759a;
+  --dg-hot: #b4500f;
+  --dg-hot-box: #fff1e6;
+}
+header.header {
+  padding-bottom: 0;
+}
+.sl-markdown-content table {
+  font-size: var(--sl-text-sm);
+}
+.sl-markdown-content td:first-child code {
+  white-space: nowrap;
+}
+.hero {
+  padding-block: 2rem 1rem;
+}
+.site-title img {
+  height: 1.6rem;
+}
+.sl-markdown-content h2 > code:only-child {
+  font-size: 0.75em;
+  overflow-wrap: anywhere;
+}

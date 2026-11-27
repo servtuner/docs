@@ -1,0 +1,55 @@
+---
+// Starlight's banner slot: the page's own banner, then a notice on every page that is not the latest release.
+// The notice is filled in from /versions.json when the page loads, so an old build points at today's latest.
+import Default from '@astrojs/starlight/components/Banner.astro';
+
+const base = import.meta.env.BASE_URL.replace(/\/?$/, '/');
+const version = import.meta.env.DOCS_VERSION ?? 'next';
+---
+
+<Default />
+<div class="version-notice" data-base={base} data-version={version} role="note" hidden></div>
+
+<script>
+  import { loadVersions } from './versions';
+
+  for (const notice of document.querySelectorAll<HTMLElement>('.version-notice')) {
+    const { base, version } = notice.dataset as { base: string; version: string };
+    loadVersions(base)
+      .then((versions) => {
+        if (!versions || version === versions.latest) return;
+        const page = location.pathname.startsWith(base) ? location.pathname.slice(base.length) : '';
+        const reading =
+          version === 'next'
+            ? 'You are reading the documentation for unreleased servtuner (main).'
+            : `You are reading the documentation for servtuner ${version}.`;
+        notice.textContent = `${reading} `;
+        if (versions.latest) {
+          const link = document.createElement('a');
+          link.href = '/';
+          link.textContent = `Read it for the latest release, ${versions.latest}.`;
+          notice.append(link);
+          if (page)
+            fetch(`/${page}`, { method: 'HEAD' })
+              .then((response) => response.ok && (link.href = `/${page}`))
+              .catch(() => {});
+        } else notice.append('There is no stable release yet.');
+        notice.hidden = false;
+      })
+      .catch(() => {});
+  }
+</script>
+
+<style>
+  .version-notice {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--sl-color-orange);
+    background: var(--sl-color-orange-low);
+    color: var(--sl-color-orange-high);
+    font-size: var(--sl-text-sm);
+  }
+  .version-notice a {
+    color: inherit;
+    font-weight: 600;
+  }
+</style>

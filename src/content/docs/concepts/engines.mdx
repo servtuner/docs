@@ -1,0 +1,53 @@
+---
+title: Engines
+description: Choose a load engine and understand sharding.
+---
+
+An engine only generates load and reports raw results. bench does everything else, so results from different engines share one format.
+
+|                           | loadgen                           | inference-perf                      |
+| ------------------------- | --------------------------------- | ----------------------------------- |
+| Implementation            | Built into bench                  | Pinned external Python program      |
+| APIs                      | Chat and completion               | Completion only                     |
+| Pacing                    | Constant, Poisson, linear, sine   | Adapter-supported subset            |
+| Conversations and presets | Yes                               | No current preset                   |
+| Schedule and send lag     | Recorded                          | Not recorded                        |
+| Client certificates       | Yes                               | Yes                                 |
+| Use it for                | Routers, high rates and most runs | Cross-checking completion workloads |
+
+The schema also lists `guidellm`. No adapter exists at this commit, and the TLS relay it would need is **Not built**.
+
+The bench image includes inference-perf. For a local run, create its environment with `just inference-perf-venv` in `bench/` and set `SERVTUNER_INFERENCE_PERF_BIN`.
+
+## Sharding
+
+Set `engine.shards` above 1 to split loadgen across processes. Each offers an equal share. Shard 0 leads, merges records and analyzes. On Kubernetes, shards are pods of one indexed Job.
+
+{/* schema: runspec */}
+
+```yaml title="sharded.yaml" {9}
+apiVersion: servtuner.dev/v1
+kind: RunSpec
+name: sharded
+target:
+  type: openai-compatible
+  endpoint: http://gateway.example.svc:8000/v1
+  model: example-model
+  tls: { mode: platform }
+engine: { type: loadgen, shards: 4 }
+workload:
+  streaming: true
+  dataset:
+    type: synthetic
+    input_tokens: { mean: 64 }
+    output_tokens: { mean: 8 }
+load:
+  stages:
+    - { rate: 10000, duration: 60s }
+```
+
+A follower that fails or does not report fails the run. Clock differences between nodes add to stage-boundary error.
+
+## Proxies
+
+Requests to the target ignore proxy environment variables, so a proxy cannot add latency to a measurement. servtuner's own connections honor them.

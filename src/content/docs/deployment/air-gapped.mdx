@@ -1,0 +1,169 @@
+---
+title: Install without internet access
+description: Install servtuner from a release archive into a cluster with no internet access, and run it offline.
+sidebar:
+  label: Air-gapped
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+A servtuner release is one [Hauler](https://docs.hauler.dev/) archive that holds every image and chart the [Kubernetes install](/deployment/helm/) needs. You copy its images into your registry, or serve them from the archive itself, and install with the same helmfile in its `airgap` environment. Once installed, servtuner fetches nothing from the internet.
+
+## Prerequisites
+
+- On a connected machine: the release files.
+- On site: `helm` 3 or 4, `helmfile` v1.8.5 and `hauler` v2.1.2. No Helm plugin is needed.
+- A registry your nodes can pull from, or nodes whose container runtime you can point at a local one.
+- Your [site values and Secrets](/deployment/helm/#1-create-secrets-first), as for a connected install.
+
+## The release
+
+| File                                              | What it holds                                                                                           |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| `servtuner-<version>.tar.zst`                     | servtuner's images, every prerequisite's images pinned by digest, the deploy bundle, and the CLI binary |
+| `servtuner-vllm-<version>.tar.zst`                | Optional: the managed vLLM images                                                                       |
+| `servtuner-flashinfer-<…>.tar.zst`                | Optional: FlashInfer's GPU kernels, for a host's vLLM or your own image                                 |
+| `servtuner-model-<name>.tar.zst`                  | Optional: one model's weights and licence, to [seed a claim](#model-weights)                            |
+| `SHA256SUMS`, `THIRD_PARTY_NOTICES`, `INSTALL.md` | Checksums, the licence of every bundled image and chart, and the install guide                          |
+
+The deploy bundle holds the helmfile, its environments and values, the servtuner chart and every prerequisite chart, so the install needs no chart repository. servtuner bundles no price data and no model you did not choose.
+
+To build a release from a checkout on a connected machine:
+
+```sh
+just release 0.1.0                       # the core archive
+just release 0.1.0 --with-vllm           # also the managed vLLM images
+just release 0.1.0 --with-flashinfer --sm sm90a   # also FlashInfer's kernels, for those GPUs only
+```
+
+## Steps
+
+### 1. Check and load the archive
+
+```sh
+sha256sum -c SHA256SUMS
+hauler store load -f servtuner-<version>.tar.zst
+```
+
+### 2. Make the images reachable
+
+<Tabs>
+  <TabItem label="Your registry">
+
+Copy every image into your registry: Harbor, Artifactory, Quay, Nexus, ECR or another. Each image keeps its path and only the registry host changes, so `quay.io/jetstack/cert-manager-controller:v1.21.1` becomes `registry.corp:5000/jetstack/cert-manager-controller:v1.21.1`.
+
+```sh
+hauler login registry.corp:5000 -u <user> -p <password>   # if it needs one
+hauler store copy registry://registry.corp:5000
+```
+
+If the registry needs credentials to pull, create a `kubernetes.io/dockerconfigjson` Secret, such as `regcred`, in each namespace: `cert-manager`, `cnpg-system`, `envoy-gateway-system`, `monitoring` and servtuner's.
+
+  </TabItem>
+  <TabItem label="No registry (k3s, RKE2, kind)">
+
+Hauler serves the archive as a read-only registry on port 5000. Keep it running during the install and while pods start.
+
+```sh
+hauler store serve registry
+```
+
+Point each node's container runtime at it. On k3s and RKE2, in `/etc/rancher/{k3s,rke2}/registries.yaml`:
+
+```yaml
+mirrors:
+  '<this-host>:5000':
+    endpoint: ['http://<this-host>:5000']
+```
+
+On kind, `just e2e-airgap` in the servtuner repository shows the whole setup: containerd's `config_path` and a `hosts.toml` for each registry.
+
+  </TabItem>
+  <TabItem label="Amazon EKS with ECR">
+
+The nodes reach ECR through VPC endpoints: `com.amazonaws.<region>.ecr.api`, `com.amazonaws.<region>.ecr.dkr`, and the S3 gateway endpoint, because ECR keeps layers in S3.
+
+ECR creates repositories on push only through a repository creation template. Create one, or create each repository first:
+
+```sh
+aws ecr create-repository-creation-template --prefix ROOT --applied-for CREATE_ON_PUSH \
+  --description "servtuner release images"
+```
+
+Then copy:
+
+```sh
+aws ecr get-login-password | hauler login <account>.dkr.ecr.<region>.amazonaws.com -u AWS --password-stdin
+hauler store copy registry://<account>.dkr.ecr.<region>.amazonaws.com
+```
+
+EKS nodes pull from their own account's ECR with their node role, so no pull secret is needed. For bundles in S3 without keys, see [storage](/deployment/storage/).
+
+  </TabItem>
+</Tabs>
+
+### 3. Unpack the deploy bundle and install
+
+```sh
+hauler store extract hauler/servtuner-deploy-<version>.tar.gz:latest
+tar -xzf servtuner-deploy-<version>.tar.gz
+cp my-site-values.yaml deploy/site-values.yaml
+helmfile -f deploy/helmfile.yaml.gotmpl -e airgap \
+  --state-values-set registry=registry.corp:5000 sync --skip-deps
+```
+
+Use your registry's host, `<this-host>:5000` without one, or your ECR address. With a pull secret, add `--state-values-set 'imagePullSecrets={regcred}'`. To skip a prerequisite your cluster runs, add `install.<name>=false` as for [a connected install](/deployment/helm/#skip-a-prerequisite).
+
+The `airgap` environment installs the charts from the bundle, rewrites every image to your registry through the charts' `global.imageRegistry`, and turns on offline mode.
+
+## Offline mode
+
+With `offline` (the chart value, `SERVTUNER_OFFLINE`, or `servtuner run --offline`), servtuner:
+
+- never fetches the public token-price datasheet: runs use the one you [upload to the price book](/guides/costs/#token-prices), and say so when there is none;
+- refuses AWS Price List prices, in the API and the UI, with the reason;
+- sets `FLASHINFER_NO_DOWNLOAD=1` for every managed vLLM, so a missing GPU kernel fails the boot at once instead of hanging on a download;
+- records `offline` in each run's `environment.json`.
+
+## Model weights
+
+A managed vLLM downloads its model from Hugging Face by default. Without internet access, choose its **Weights** source: an internal mirror, a claim you seed once, or an object store. See [model sources](/guides/managed-vllm/#model-sources).
+
+To seed a claim from a model archive, on site:
+
+```sh
+hauler store load -f servtuner-model-qwen2.5-0.5b.tar.zst
+hauler store extract hauler/servtuner-model-qwen2.5-0.5b.tar.gz:latest
+kubectl -n <namespace> apply -f my-claim.yaml   # a PVC big enough for the model, such as qwen-weights
+```
+
+Then copy the archive into the claim with a temporary pod that mounts it, and unpack its `model/hub/` folder to `/models/hf` on the claim. That is where the managed vLLM's `--download-dir` points. `INSTALL.md` in the release has the exact commands.
+
+To build a model archive on a connected machine, download the model into a Hugging Face cache, then run `just model-archive <name> <cache dir> <licence file>`. It refuses gated models and licences that do not clearly allow redistribution.
+
+## GPU kernels
+
+vLLM's attention and sampling kernels come from FlashInfer, which downloads any precompiled kernel it lacks from NVIDIA's servers. Offline, every kernel must already be installed:
+
+- **The stock vLLM image**, from the optional vLLM archive, already carries every kernel. Nothing to do.
+- **A host target or your own image:** build the release with `--with-flashinfer`, and install the wheels into vLLM's Python environment with `pip install --no-index --no-deps`. The FlashInfer version must match your vLLM's (0.7.3 for vLLM v0.34.0); a mismatched kernel wheel is ignored.
+- **A mirror:** copy FlashInfer's kernel repository inside your network and set `FLASHINFER_CUBINS_REPOSITORY` in the managed vLLM's environment.
+
+When a kernel is missing, the target's page says which wheel to install.
+
+## Upgrade
+
+Load the next archive, copy it into your registry, unpack the new deploy bundle and run `helmfile … sync` again. The API migrates its database on start. Each release is an ordinary Helm release, so `helm history` and `helm rollback` work on each, and `--selector name=servtuner` upgrades servtuner alone.
+
+## Verify
+
+```sh
+helmfile -f deploy/helmfile.yaml.gotmpl -e airgap list
+kubectl get pods -A -o jsonpath='{..image}' | tr ' ' '\n' | sort -u   # every image from your registry
+```
+
+Then sign in, upload a token-price datasheet if you price tokens, and run the mock or your own target.
+
+## Next steps
+
+[Set up authentication](/deployment/authentication/) and [the price book](/guides/costs/).

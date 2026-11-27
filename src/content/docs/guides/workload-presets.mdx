@@ -1,0 +1,77 @@
+---
+title: Use workload presets
+description: Run a named, versioned workload so that results stay comparable.
+---
+
+import presetsJson from '../../../data/presets.ts';
+
+A preset is one exact request mix. Runs with the same preset always have the same workload hash, so they can be compared.
+
+## Prerequisites
+
+- The `loadgen` engine. Every current preset lists it as its only engine.
+
+## Available presets
+
+<table>
+  <thead>
+    <tr>
+      <th>Preset</th>
+      <th>Input tokens</th>
+      <th>Output tokens</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    {presetsJson.map((p) => (
+      <tr>
+        <td>
+          <code>{p.id}</code>
+        </td>
+        <td>{p.input}</td>
+        <td>{p.output}</td>
+        <td>{p.description}</td>
+      </tr>
+    ))}
+  </tbody>
+</table>
+
+## Steps
+
+1. In **New run**, choose a preset. servtuner fills in its suggested SLOs and a starting ladder.
+2. Or reference it in the RunSpec:
+
+{/* schema: runspec */}
+
+```yaml title="preset.yaml"
+apiVersion: servtuner.dev/v1
+kind: RunSpec
+name: chat-short
+target:
+  type: openai-compatible
+  endpoint: http://localhost:18000/v1
+  model: mock-model
+  tls: { mode: platform }
+engine: { type: loadgen }
+workload:
+  preset: chat-short@1
+  streaming: true
+load:
+  stages:
+    - { rate: 4, duration: 60s }
+slos: { ttft_p95: 500ms, itl_p95: 50ms }
+```
+
+Do not combine a preset with `dataset` or `conversation`. To change anything, write the workload out. bench never applies a preset's suggested SLOs, so state yours.
+
+:::note
+Suggested rates are handwritten starting points for named GPU classes. They are not measured capacity.
+:::
+
+## Verify
+
+`servtuner presets` prints the catalog built into your binary. After a run, `spec.resolved.json` contains the expanded workload and the preset's name and version.
+
+## Next steps
+
+Set [SLOs and a ladder](/guides/slos-and-capacity/), or use a preset in a [tuning session](/guides/tuning-sessions/).

@@ -1,0 +1,94 @@
+---
+title: Configure storage
+description: Keep bundles in a shared directory or an S3-compatible store.
+sidebar:
+  label: Storage
+---
+
+import { Tabs, TabItem } from '@astrojs/starlight/components';
+
+Postgres holds the index. The bundle store holds the data of record. Back up both, and protect the bundles first.
+
+## Prerequisites
+
+- A storage class or an S3-compatible bucket.
+
+## Steps
+
+<Tabs>
+  <TabItem label="File (default)">
+
+```yaml
+storage:
+  backend: file
+  file:
+    dataDir: /var/lib/servtuner
+    pvc: { create: true, storageClass: your-rwx-class, accessMode: ReadWriteMany, size: 50Gi }
+```
+
+Use ReadWriteMany to let Jobs run on any node. With ReadWriteOnce, the chart pins Jobs to the API's node and records it in runs.
+
+One claim cannot span namespaces. For a separate runs namespace, provide `existingClaim` with the same name in both, on the same ReadWriteMany storage.
+
+  </TabItem>
+  <TabItem label="S3-compatible">
+
+```yaml
+storage:
+  backend: s3
+  s3:
+    endpoint: https://s3.example.internal
+    region: us-east-1
+    bucket: servtuner-runs
+    prefix: runs/
+    forcePathStyle: true
+    checksumMode: when_required
+    credentials:
+      source: secret
+      secretRef: { name: servtuner-s3, accessKeyKey: access-key, secretKeyKey: secret-key }
+```
+
+  </TabItem>
+  <TabItem label="AWS S3">
+
+```yaml
+storage:
+  backend: s3
+  s3:
+    region: us-east-1
+    bucket: your-bucket
+    prefix: runs/
+    forcePathStyle: false
+    checksumMode: when_supported
+    credentials: { source: ambient }
+tls:
+  source: cert-manager
+  certManager:
+    issuerRef: { kind: ClusterIssuer, name: your-issuer }
+  hops:
+    objectStore: mtls
+```
+
+Leave `endpoint` empty. servtuner uses the AWS SDK credential chain, such as EKS Pod Identity. No client certificate is sent to AWS.
+
+  </TabItem>
+</Tabs>
+
+## AWS permissions
+
+| Role  | Object actions                                            | Bucket action   |
+| ----- | --------------------------------------------------------- | --------------- |
+| bench | `s3:PutObject`, `s3:AbortMultipartUpload`, `s3:GetObject` | `s3:ListBucket` |
+| API   | `s3:GetObject`                                            | `s3:ListBucket` |
+
+Scope them to the bucket and prefix. Add `kms:GenerateDataKey` and `kms:Decrypt` for an encrypted bucket, and `pricing:GetProducts` to bench for AWS prices. With Pod Identity, associate `servtuner-api` in the release namespace and `servtuner-bench` in the runs namespace.
+
+The chart does not deploy an object store.
+
+## Verify
+
+Finish a run, open **Files**, and download `manifest.json`.
+
+## Next steps
+
+Understand [run bundles](/concepts/run-bundles/).
