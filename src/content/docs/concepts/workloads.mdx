@@ -77,7 +77,7 @@ Every request sets `max_tokens` to its sampled output target. What happens next 
 
 - **Layout.** `input_tokens` is the whole prompt. Each request has the run tag, then its group's prefix of `tokens` tokens, then text of its own that fills the rest of its input target, at least one token. Each request picks a group at random from `groups`.
 - **Stable bytes.** A group's prefix text is generated at its first use and kept for the whole run, byte for byte, so the server can cache it. Regenerating it when calibration moved would defeat the cache.
-- **Sizing.** Because the prefix is generated at its first use, which is usually the first few warmup requests, it is sized with the ratio at that moment, usually 4.0. So the prefix's real length is what the model's tokenizer makes of text sized at 4.0 characters per token, which can be shorter than `tokens`. Each request's own part uses the calibrated ratio. To see the real lengths, compare the reported input tokens with the target, as shown in [Check a run](#check-a-run).
+- **Sizing.** A group's prefix is sized with the ratio at its first use: 4.0 if no warmup response has arrived yet, or the ratio calibrated so far. A group first used before calibration keeps a shorter prefix for the whole run, so the mean input can fall short of the target. How far depends on how soon warmup responses arrive. Against servtuner's mock server, which answers quickly, `agent-prefix` came out about 5% under its 2,048 tokens. Each request's own part uses the current ratio. To see the real lengths, compare the reported input tokens with the target, as shown in [Check a run](#check-a-run).
 
 ## Conversations
 
@@ -133,7 +133,7 @@ Then:
 | What you see                        | Likely cause                                                      | What to do                                                                                  |
 | ----------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
 | Mean input well off the target      | No warmup, or too few completed warmup requests                   | Keep a warmup. Check that `chars_per_token` is in `environment.json`                        |
-| Mean input low with a shared prefix | The prefix was sized before calibration                           | Compare the prefix size with the reported input, and allow for it                           |
+| Mean input low with a shared prefix | Groups first used before calibration kept a shorter prefix        | Compare the reported input with the target, and allow for the difference                    |
 | Mean output below the target        | The target is not `vllm`, so the model stopped at end-of-sequence | Expected through routers. Benchmark the vLLM behind it as a `vllm` target for exact lengths |
 | Requests fail with HTTP 400 on vLLM | Prompt plus `max_tokens` is over the model's context length       | Lower the lengths, or raise `max_model_len`                                                 |
 
