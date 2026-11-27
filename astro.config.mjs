@@ -86,7 +86,13 @@ export default defineConfig({
             { label: 'Tune vLLM', items: ['guides/managed-vllm', 'guides/tuning-sessions'] },
             {
               label: 'Concepts',
-              items: ['concepts/trustworthy-rps', 'concepts/metrics', 'concepts/run-bundles', 'concepts/engines'],
+              items: [
+                'concepts/workloads',
+                'concepts/trustworthy-rps',
+                'concepts/metrics',
+                'concepts/run-bundles',
+                'concepts/engines',
+              ],
             },
             { label: 'Help', items: ['help/troubleshooting', 'help/glossary', 'help/contributing'] },
           ],
