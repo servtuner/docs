@@ -4,7 +4,11 @@ import { existsSync, globSync, readFileSync, statSync } from 'node:fs';
 
 const rules = [
   ['home path', /\/(?:home|Users)\/[a-z][\w.-]*|\/root\/|[A-Z]:\\Users\\/],
-  ['email', /\b[\w.+-]+@(?!example\.|astrojs\b)[\w-]+\.(?:com|org|net|io|dev|ai|edu)\b/],
+  // The project's own addresses (conduct@servtuner.dev) are published on purpose; any other address is private.
+  [
+    'email',
+    /\b[\w.+-]+@(?!example\.|astrojs\b|servtuner\.dev(?![\w-]|\.[\w-]))[\w-]+\.(?:com|org|net|io|dev|ai|edu)\b/,
+  ],
   ['private address', /\b(?:10\.\d{1,3}|192\.168|172\.(?:1[6-9]|2\d|3[01]))\.\d{1,3}\.\d{1,3}\b/],
   [
     'public address',
