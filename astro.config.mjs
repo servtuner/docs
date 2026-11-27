@@ -107,6 +107,7 @@ export default defineConfig({
                 'deployment/local',
                 'deployment/kind',
                 'deployment/helm',
+                'deployment/components',
                 'deployment/air-gapped',
                 'deployment/verify',
                 'deployment/launcher',

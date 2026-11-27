@@ -45,6 +45,8 @@ tls:
     benchPrometheus: false
 ```
 
+Installed with the helmfile, `issuerRef` defaults to servtuner's private CA, `servtuner-ca` (see [components](/deployment/components/)); name your own issuer only to replace it.
+
 `tls.clientAuth` is the API's own policy. With `required` or `optional`, bench presents its certificate to the API. With `optional`, a client without a certificate gets in on its sign-in or run token alone, and a certificate that is sent is still verified. With `none`, the API asks for no certificate. The two API connections share one listener, so they must agree.
 
 ### Postgres sign-in
