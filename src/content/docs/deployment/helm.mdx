@@ -52,11 +52,11 @@ The chart generates the first-admin setup token itself. See [authentication](/de
 Copy `deploy/helmfile/site-values.example.yaml` to `deploy/site-values.yaml`. Every value of the chart may go there; these are the ones every site decides.
 
 <Tabs syncKey="tls">
-  <TabItem label="mTLS (default)">
+  <TabItem label="TLS with client certificates (default)">
 
 ```yaml title="deploy/site-values.yaml"
 tls:
-  mode: mtls
+  enabled: true
   source: cert-manager
   certManager:
     issuerRef: { kind: ClusterIssuer, name: your-issuer }
@@ -74,11 +74,11 @@ rbac:
 ```
 
   </TabItem>
-  <TabItem label="Platform encryption">
+  <TabItem label="No TLS (a mesh encrypts)">
 
 ```yaml title="deploy/site-values.yaml"
 tls:
-  mode: platform
+  enabled: false
 gateway:
   enabled: true
   hostname: servtuner.example.internal
@@ -92,7 +92,7 @@ rbac:
     targetNamespaces: [inference]
 ```
 
-`platform` states that your network encrypts this traffic. servtuner cannot check that.
+`tls.enabled: false` states that something else, such as a service mesh or an encrypted CNI, encrypts this traffic. servtuner cannot check that.
 
   </TabItem>
 </Tabs>
@@ -134,12 +134,12 @@ helm install servtuner oci://ghcr.io/servtuner/charts/servtuner --version <versi
 <Tabs>
   <TabItem label="Gateway API">
 
-`gateway.enabled` renders two HTTPRoutes on one hostname: the UI, and the API under `<basePath>/api`. In `mtls`, an Envoy `Backend` presents the chart's client certificate to the API and a `BackendTLSPolicy` checks the API's name. Install Envoy Gateway with `enableBackend`.
+`gateway.enabled` renders two HTTPRoutes on one hostname: the UI, and the API under `<basePath>/api`. With TLS, an Envoy `Backend` presents the chart's client certificate to the API and a `BackendTLSPolicy` checks the API's name. Install Envoy Gateway with `enableBackend`.
 
   </TabItem>
   <TabItem label="Ingress">
 
-`ingress.enabled` renders the same two routes as Ingresses for ingress-nginx, which is retired upstream: prefer the Gateway API for new installs. In `mtls`, the API Ingress verifies the API with the chart's certificate. `ingress` and `gateway` are exclusive.
+`ingress.enabled` renders the same two routes as Ingresses for ingress-nginx, which is retired upstream: prefer the Gateway API for new installs. With TLS, the API Ingress verifies the API with the chart's certificate. `ingress` and `gateway` are exclusive.
 
   </TabItem>
 </Tabs>

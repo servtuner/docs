@@ -18,7 +18,7 @@ Measure Bifrost's overhead and capacity, and size a provider's concurrency and b
 {/* schema: runspec */}
 
 ```yaml title="bifrost.yaml"
-apiVersion: servtuner.dev/v1
+apiVersion: servtuner.dev/v2
 kind: RunSpec
 name: bifrost-concurrency-128
 experiment: bifrost-concurrency
@@ -37,8 +37,8 @@ target:
       workload:
         namespace: mock
         selector: { app: openai-mock }
-      tls: { mode: platform }
-  tls: { mode: platform }
+      tls: { enabled: false }
+  tls: { enabled: false }
 engine: { type: loadgen }
 workload:
   streaming: true
@@ -56,7 +56,7 @@ load:
 slos: { ttft_p95: 500ms, e2e_p95: 3s }
 prometheus:
   url: http://prometheus.monitoring.svc:9090
-  tls: { mode: platform }
+  tls: { enabled: false }
 ```
 
 The last stage is a burst probe. It checks the recommended queue and stays out of the capacity ladder.

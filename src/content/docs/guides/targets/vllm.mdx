@@ -18,7 +18,7 @@ Measure a vLLM server directly and explain its latency with KV cache, queue and 
 {/* schema: runspec */}
 
 ```yaml title="vllm.yaml"
-apiVersion: servtuner.dev/v1
+apiVersion: servtuner.dev/v2
 kind: RunSpec
 name: vllm-baseline
 experiment: vllm-max-num-seqs
@@ -34,8 +34,8 @@ target:
     namespace: inference
     selector: { app: vllm }
   tls:
-    mode: mtls
-    secretRef: { name: servtuner-client }
+    enabled: true
+    clientCert: { secretRef: { name: servtuner-client } }
 engine: { type: loadgen }
 workload:
   preset: chat-short@1
@@ -51,8 +51,8 @@ slos: { ttft_p95: 500ms, itl_p95: 50ms }
 prometheus:
   url: https://prometheus.monitoring.svc:9090
   tls:
-    mode: mtls
-    secretRef: { name: servtuner-client }
+    enabled: true
+    clientCert: { secretRef: { name: servtuner-client } }
 ```
 
 For a vLLM outside Kubernetes, use `target.metrics` instead of `target.workload`. It names the labels your scrape job attaches. See [off-cluster targets](/deployment/prometheus/#off-cluster-targets).

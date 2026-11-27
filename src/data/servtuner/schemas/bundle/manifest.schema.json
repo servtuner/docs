@@ -8,9 +8,9 @@
   "required": ["bundle_version", "run_id", "status", "started_at", "bench_version", "files"],
   "properties": {
     "bundle_version": {
-      "description": "Changes only on a breaking change to the bundle layout.",
+      "description": "Changes only on a breaking change to the bundle layout. 2 (servtuner 0.2) records each hop's transport in environment.json as {tls, client_cert}; 1 (servtuner 0.1) recorded a mode string. Readers accept both.",
       "type": "integer",
-      "const": 1
+      "enum": [1, 2]
     },
     "run_id": {
       "type": "string",

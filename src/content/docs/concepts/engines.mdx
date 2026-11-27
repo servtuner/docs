@@ -26,14 +26,14 @@ Set `engine.shards` above 1 to split loadgen across processes. Each offers an eq
 {/* schema: runspec */}
 
 ```yaml title="sharded.yaml" {9}
-apiVersion: servtuner.dev/v1
+apiVersion: servtuner.dev/v2
 kind: RunSpec
 name: sharded
 target:
   type: openai-compatible
   endpoint: http://gateway.example.svc:8000/v1
   model: example-model
-  tls: { mode: platform }
+  tls: { enabled: false }
 engine: { type: loadgen, shards: 4 }
 workload:
   streaming: true

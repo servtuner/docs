@@ -8,22 +8,22 @@ editUrl: false
 
 manifest.json: written last, so the API never indexes a half-written bundle.
 
-Schema file: `schema/json/bundle/manifest.schema.json`. Generated from servtuner commit `505d4f5b031c`.
+Schema file: `schema/json/bundle/manifest.schema.json`. Generated from servtuner commit `5730cfa50f08`.
 
 ## Top level
 
-| Field            | Type                                                               | Required | Description                                             |
-| ---------------- | ------------------------------------------------------------------ | -------- | ------------------------------------------------------- |
-| `bundle_version` | `1`                                                                | Yes      | Changes only on a breaking change to the bundle layout. |
-| `run_id`         | `string`                                                           | Yes      |                                                         |
-| `name`           | `string`                                                           | No       | RunSpec name.                                           |
-| `bench_version`  | `string`                                                           | Yes      |                                                         |
-| `status`         | [runStatus](/reference/schemas/manifest/#runstatus)                | Yes      |                                                         |
-| `started_at`     | [utcTimestamp](/reference/schemas/common/#utctimestamp)            | Yes      |                                                         |
-| `finished_at`    | [utcTimestamp](/reference/schemas/common/#utctimestamp)            | No       |                                                         |
-| `error`          | [failure](/reference/schemas/manifest/#failure)                    | No       |                                                         |
-| `storage`        | [bundleLocation](/reference/schemas/manifest/#bundlelocation)      | No       |                                                         |
-| `files`          | array of [manifestFile](/reference/schemas/manifest/#manifestfile) | Yes      | Every other file in the bundle, with its checksum.      |
+| Field            | Type                                                               | Required | Description                                                                                                                                                                                                       |
+| ---------------- | ------------------------------------------------------------------ | -------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `bundle_version` | `1`, `2`                                                           | Yes      | Changes only on a breaking change to the bundle layout. 2 (servtuner 0.2) records each hop's transport in environment.json as {tls, client\_cert}; 1 (servtuner 0.1) recorded a mode string. Readers accept both. |
+| `run_id`         | `string`                                                           | Yes      |                                                                                                                                                                                                                   |
+| `name`           | `string`                                                           | No       | RunSpec name.                                                                                                                                                                                                     |
+| `bench_version`  | `string`                                                           | Yes      |                                                                                                                                                                                                                   |
+| `status`         | [runStatus](/reference/schemas/manifest/#runstatus)                | Yes      |                                                                                                                                                                                                                   |
+| `started_at`     | [utcTimestamp](/reference/schemas/common/#utctimestamp)            | Yes      |                                                                                                                                                                                                                   |
+| `finished_at`    | [utcTimestamp](/reference/schemas/common/#utctimestamp)            | No       |                                                                                                                                                                                                                   |
+| `error`          | [failure](/reference/schemas/manifest/#failure)                    | No       |                                                                                                                                                                                                                   |
+| `storage`        | [bundleLocation](/reference/schemas/manifest/#bundlelocation)      | No       |                                                                                                                                                                                                                   |
+| `files`          | array of [manifestFile](/reference/schemas/manifest/#manifestfile) | Yes      | Every other file in the bundle, with its checksum.                                                                                                                                                                |
 
 ## Definitions
 

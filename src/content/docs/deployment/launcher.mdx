@@ -21,7 +21,7 @@ Every key matches a flag of the same name, and a flag on the command line wins. 
 
 ```yaml title="launcher.yaml"
 listen: 0.0.0.0:9123
-tls_mode: platform # or tls, with tls_cert_file and tls_key_file
+tls: false # true serves tls_cert_file and tls_key_file, with client_auth: none
 vllm: /opt/vllm/bin/vllm # the executable, when it is not on PATH
 log_dir: /var/lib/servtuner-launcher
 # token_file and api_key_file name files that hold the secrets. Under systemd, leave them unset.
@@ -105,7 +105,7 @@ The managed target then uses port 9123 for the launcher and 8080 for vLLM. Allow
 
 ## Security
 
-Every request needs the bearer token. Give vLLM its own API key through `api_key_file` or the credential, so it is neither sent over the network nor visible in its arguments. Limit the launcher port to the API with a firewall. For HTTPS, use `tls_mode: tls` with the launcher's own certificate; the API verifies it and has no skip-verify option.
+Every request needs the bearer token. Give vLLM its own API key through `api_key_file` or the credential, so it is neither sent over the network nor visible in its arguments. Limit the launcher port to the API with a firewall. For HTTPS, use `tls: true` with the launcher's own certificate and `client_auth: none`; the API verifies it and has no skip-verify option. The API presents no client certificate to launchers yet, so `client_auth: required` would refuse it.
 
 ## Verify
 

@@ -8,7 +8,7 @@ editUrl: false
 
 plan.json: what to deploy for the requested traffic, one tier per capacity model, each value a node of the derivation graph, with the checks the overrides caused.
 
-Schema file: `schema/json/plan.schema.json`. Generated from servtuner commit `505d4f5b031c`.
+Schema file: `schema/json/plan.schema.json`. Generated from servtuner commit `5730cfa50f08`.
 
 ## Top level
 

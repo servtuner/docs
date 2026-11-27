@@ -44,14 +44,14 @@ A preset is one exact request mix. Runs with the same preset always have the sam
 {/* schema: runspec */}
 
 ```yaml title="preset.yaml"
-apiVersion: servtuner.dev/v1
+apiVersion: servtuner.dev/v2
 kind: RunSpec
 name: chat-short
 target:
   type: openai-compatible
   endpoint: http://localhost:18000/v1
   model: mock-model
-  tls: { mode: platform }
+  tls: { enabled: false }
 engine: { type: loadgen }
 workload:
   preset: chat-short@1

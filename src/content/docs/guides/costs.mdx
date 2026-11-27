@@ -60,14 +60,14 @@ A router can have both. **New run** copies the target's prices into the new spec
 {/* schema: runspec */}
 
 ```yaml title="Pricing in a RunSpec"
-apiVersion: servtuner.dev/v1
+apiVersion: servtuner.dev/v2
 kind: RunSpec
 name: priced-run
 target:
   type: openai-compatible
   endpoint: http://router.inference.svc:4000/v1
   model: gpt-4o-mini
-  tls: { mode: platform }
+  tls: { enabled: false }
 engine: { type: loadgen }
 workload:
   api: chat

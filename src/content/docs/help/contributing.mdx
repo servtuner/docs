@@ -7,16 +7,16 @@ description: Develop servtuner and keep this documentation accurate.
 
 The source is at [github.com/servtuner/servtuner](https://github.com/servtuner/servtuner); read its `CONTRIBUTING.md` before you open a pull request. Versions of Go, Python, Node, just and uv are pinned in `.tool-versions`.
 
-| Command                                          | What it does                                         |
-| ------------------------------------------------ | ---------------------------------------------------- |
-| `just setup`                                     | Installs dependencies of every component             |
-| `just gen`                                       | Regenerates types and API documents from the schemas |
-| `just gen-check`                                 | Fails if regeneration changes the tree               |
-| `just lint`                                      | Runs linters and a duplication check                 |
-| `just test`                                      | Runs component tests                                 |
-| `just e2e-local-loadgen`                         | Runs loadgen against the mock                        |
-| `just e2e-local-platform`, `just e2e-local-mtls` | Runs the API and the servtuner CLI end to end        |
-| `just e2e-smoke`                                 | Runs the UI smoke test                               |
+| Command                                               | What it does                                         |
+| ----------------------------------------------------- | ---------------------------------------------------- |
+| `just setup`                                          | Installs dependencies of every component             |
+| `just gen`                                            | Regenerates types and API documents from the schemas |
+| `just gen-check`                                      | Fails if regeneration changes the tree               |
+| `just lint`                                           | Runs linters and a duplication check                 |
+| `just test`                                           | Runs component tests                                 |
+| `just e2e-local-loadgen`                              | Runs loadgen against the mock                        |
+| `just e2e-local-tls-off`, `just e2e-local-mutual-tls` | Runs the API and the servtuner CLI end to end        |
+| `just e2e-smoke`                                      | Runs the UI smoke test                               |
 
 ### Rules that shape a change
 

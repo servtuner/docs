@@ -39,7 +39,7 @@ This page is for developing servtuner: it runs everything from a checkout. To tr
 
    ```sh
    export SERVTUNER_RUNNER=subprocess SERVTUNER_BENCH_BINARY=/tmp/servtuner
-   export SERVTUNER_DATA_DIR=/tmp/servtuner-data SERVTUNER_API_PORT=18080 SERVTUNER_TLS_MODE=platform
+   export SERVTUNER_DATA_DIR=/tmp/servtuner-data SERVTUNER_API_PORT=18080 SERVTUNER_TLS_ENABLED=false
    export SERVTUNER_DATABASE_HOST=127.0.0.1 SERVTUNER_DATABASE_PORT=15432 SERVTUNER_DATABASE_NAME=servtuner
    export SERVTUNER_DATABASE_USER=servtuner SERVTUNER_DATABASE_PASSWORD=local-only SERVTUNER_DATABASE_SSLMODE=disable
    uv run --project api servtuner-api
@@ -73,4 +73,4 @@ Stop the API and frontend, then run `docker stop servtuner-local-pg`. Delete `/t
 
 ## Next steps
 
-Use `just e2e-local-platform` or `just e2e-local-mtls` to run the local end-to-end tests, or [install with Helm](/deployment/helm/).
+Use `just e2e-local-tls-off` or `just e2e-local-mutual-tls` to run the local end-to-end tests, or [install with Helm](/deployment/helm/).

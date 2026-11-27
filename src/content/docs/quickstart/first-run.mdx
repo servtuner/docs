@@ -65,14 +65,14 @@ cd /tmp/servtuner-quickstart
    {/* schema: runspec */}
 
    ```yaml title="quickstart.yaml"
-   apiVersion: servtuner.dev/v1
+   apiVersion: servtuner.dev/v2
    kind: RunSpec
    name: quickstart
    target:
      type: openai-compatible
      endpoint: http://localhost:18000/v1
      model: mock-model
-     tls: { mode: platform }
+     tls: { enabled: false }
    engine: { type: loadgen }
    workload:
      api: chat
@@ -90,7 +90,7 @@ cd /tmp/servtuner-quickstart
    slos: { ttft_p95: 500ms, e2e_p95: 2s }
    ```
 
-   `platform` means plain HTTP. See [transport security](/deployment/transport-security/) before using it across a network.
+   `tls: { enabled: false }` means plain HTTP. See [transport security](/deployment/transport-security/) before using it across a network.
 
 2. Validate it.
 
@@ -105,7 +105,7 @@ cd /tmp/servtuner-quickstart
 3. Start the mock in a second terminal.
 
    ```sh
-   go run github.com/servtuner/servtuner/deploy/mocks/openai-mock@main --tls-mode platform --listen 127.0.0.1:18000
+   go run github.com/servtuner/servtuner/deploy/mocks/openai-mock@main --tls false --listen 127.0.0.1:18000
    ```
 
    The first run downloads and builds the mock, which takes a minute.

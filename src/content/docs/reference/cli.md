@@ -8,7 +8,7 @@ editUrl: false
 
 `servtuner` is one Go binary. It runs as a Kubernetes Job or as a local process with the same command line.
 
-Generated from servtuner commit `505d4f5b031c`.
+Generated from servtuner commit `5730cfa50f08`.
 
 ## Exit codes
 
@@ -143,22 +143,24 @@ Flags:
 Run vLLM for servtuner's tuning loop on a host outside Kubernetes.
 
 ```text wrap
-Serves the launcher API: servtuner's deployer starts, stops and inspects `vllm serve` here with the flags a tuning session chooses ("Hosts outside Kubernetes"). Settings come from flags, over a YAML config file (--config, $SERVTUNER_LAUNCHER_CONFIG, $XDG_CONFIG_HOME/servtuner/launcher.yaml, then /etc/servtuner/launcher.yaml; deploy/launcher/README.md). Every request needs the bearer token in the token file. vLLM's own API key, if any, is read from the API key file and given as VLLM_API_KEY, never sent over the network. Under systemd, the files default to the unit's LoadCredential= launcher-token and vllm-api-key. The TLS mode is required and never inferred: platform serves plain HTTP, tls serves the certificate and key files.
+Serves the launcher API: servtuner's deployer starts, stops and inspects `vllm serve` here with the flags a tuning session chooses ("Hosts outside Kubernetes"). Settings come from flags, over a YAML config file (--config, $SERVTUNER_LAUNCHER_CONFIG, $XDG_CONFIG_HOME/servtuner/launcher.yaml, then /etc/servtuner/launcher.yaml; deploy/launcher/README.md). Every request needs the bearer token in the token file. vLLM's own API key, if any, is read from the API key file and given as VLLM_API_KEY, never sent over the network. Under systemd, the files default to the unit's LoadCredential= launcher-token and vllm-api-key. --tls is required and never inferred: false serves plain HTTP; true serves the certificate and key files, and --client-auth says whether clients must present a certificate (required), may (optional: one that is sent is verified) or need not (none).
 
 Usage:
-  servtuner launcher [--config FILE] [--listen ADDR --token-file FILE --tls-mode platform|tls] [flags]
+  servtuner launcher [--config FILE] [--listen ADDR --token-file FILE --tls true|false [--client-auth required|optional|none]] [flags]
 
 Flags:
-      --api-key-file string    file holding vLLM's --api-key value, given to vLLM as VLLM_API_KEY (api_key_file)
-      --config string          YAML config file (default: $SERVTUNER_LAUNCHER_CONFIG, $XDG_CONFIG_HOME/servtuner/launcher.yaml, /etc/servtuner/launcher.yaml)
-  -h, --help                   help for launcher
-      --listen string          address to serve the launcher API on (listen) (default ":9123")
-      --log-dir string         directory for vllm.log (log_dir) (default "servtuner-launcher")
-      --tls-cert-file string   server certificate, tls mode (tls_cert_file)
-      --tls-key-file string    server key, tls mode (tls_key_file)
-      --tls-mode string        platform (plain HTTP) or tls; required (tls_mode)
-      --token-file string      file holding the bearer token every request must carry (token_file)
-      --vllm string            the vllm executable (vllm) (default "vllm")
+      --api-key-file string         file holding vLLM's --api-key value, given to vLLM as VLLM_API_KEY (api_key_file)
+      --client-auth string          client certificates with --tls true: required, optional or none (client_auth)
+      --config string               YAML config file (default: $SERVTUNER_LAUNCHER_CONFIG, $XDG_CONFIG_HOME/servtuner/launcher.yaml, /etc/servtuner/launcher.yaml)
+  -h, --help                        help for launcher
+      --listen string               address to serve the launcher API on (listen) (default ":9123")
+      --log-dir string              directory for vllm.log (log_dir) (default "servtuner-launcher")
+      --tls string                  serve over TLS: true or false; required (tls)
+      --tls-cert-file string        server certificate, with --tls true (tls_cert_file)
+      --tls-client-ca-file string   CA that signs client certificates, with --client-auth required or optional (tls_client_ca_file)
+      --tls-key-file string         server key, with --tls true (tls_key_file)
+      --token-file string           file holding the bearer token every request must carry (token_file)
+      --vllm string                 the vllm executable (vllm) (default "vllm")
 ```
 
 ## servtuner plan
@@ -217,20 +219,20 @@ Flags:
 Execute one run and write its bundle.
 
 ```text wrap
-Executes one run end to end and writes the run bundle into --out. With --api-url, status events are POSTed to the api (--api-tls-mode is then required; it is never inferred).
+Executes one run end to end and writes the run bundle into --out. With --api-url, status events are POSTed to the api (--api-tls is then required; it is never inferred).
 
 Usage:
   servtuner run --spec <path> --out <bundle dir> [flags]
 
 Flags:
-      --api-tls-mode string             transport mode of the api hop: mtls or platform (required with --api-url)
+      --api-tls string                  whether the api hop uses TLS: true or false (required with --api-url; never inferred)
       --api-url string                  api base URL for status events
   -h, --help                            help for run
       --kubeconfig string               kubeconfig for the read-only target snapshot (default: in-cluster config; no cluster means the Kubernetes part is skipped)
-      --object-store-ca-file string     extra CA bundle the object store's certificate is verified against (mtls only)
-      --object-store-cert-file string   client certificate for the object store (mtls only)
-      --object-store-key-file string    client key for the object store (mtls only)
-      --object-store-tls-mode string    transport mode of the object-store hop with an s3:// --out: mtls or platform (required then; never inferred)
+      --object-store-ca-file string     extra CA bundle the object store's certificate is verified against (with --object-store-tls true)
+      --object-store-cert-file string   client certificate to present to the object store (with --object-store-tls true)
+      --object-store-key-file string    client key for --object-store-cert-file
+      --object-store-tls string         whether the object-store hop of an s3:// --out uses TLS: true or false (required then; never inferred)
       --offline                         no internet access: never fetch the public token-price datasheet and refuse AWS Price List prices; recorded in environment.json
       --out string                      bundle directory, or s3://<bucket>/<prefix> (default: <data dir>/runs/<run id>)
       --run-id string                   run id, a ULID (default: a fresh one)
@@ -238,9 +240,9 @@ Flags:
       --secrets-dir string              directory where the Secrets named by the RunSpec are mounted, one subdirectory per Secret (default: $SERVTUNER_SECRETS_DIR, else /etc/servtuner/secrets)
       --shard-index int                 this process's shard of a RunSpec with engine.shards N: 0 (the default) leads and writes the bundle; 1..N-1 send their share of the load and hand their rows to the leader through --out
       --spec string                     path to the RunSpec (YAML or JSON)
-      --tls-ca-file string              extra CA bundle the api's certificate is verified against, added to the system pool (mtls only)
-      --tls-cert-file string            client certificate for the api hop (mtls only)
-      --tls-key-file string             client key for the api hop (mtls only)
+      --tls-ca-file string              extra CA bundle the api's certificate is verified against, added to the system pool (with --api-tls true)
+      --tls-cert-file string            client certificate to present to the api (with --api-tls true)
+      --tls-key-file string             client key for --tls-cert-file
 ```
 
 ## servtuner spaces
@@ -259,10 +261,10 @@ Flags:
 
 ## servtuner validate
 
-Check a RunSpec: schema, transport mode rules and stage lengths.
+Check a RunSpec: schema, TLS rules and stage lengths.
 
 ```text wrap
-Checks a RunSpec (YAML or JSON) against the schema, the transport rules (mtls needs https://, platform needs http://) and the minimum stage length. Exits 0 when valid and 2 when not, listing every problem. Stage-length findings are warnings unless --strict is given.
+Checks a RunSpec (YAML or JSON) against the schema, the transport rules (tls enabled needs https://, disabled needs http://) and the minimum stage length. Exits 0 when valid and 2 when not, listing every problem. Stage-length findings are warnings unless --strict is given.
 
 Usage:
   servtuner validate --spec <path> [flags]

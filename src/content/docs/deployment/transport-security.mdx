@@ -1,65 +1,100 @@
 ---
 title: Configure transport security
-description: Choose an explicit transport mode for every connection.
+description: Choose TLS and client certificates explicitly for every connection.
 sidebar:
   label: Transport security
 ---
 
-servtuner never assumes that a network is encrypted and never infers a mode. Each connection, or _hop_, states one.
+servtuner never assumes that a network is encrypted and never guesses. Each connection, or _hop_, answers the two questions TLS asks.
 
-| Mode       | What servtuner does                                                | Use it for                                  |
-| ---------- | ------------------------------------------------------------------ | ------------------------------------------- |
-| `mtls`     | Presents a client certificate and verifies the server              | The default for servtuner's own connections |
-| `platform` | Speaks plain HTTP or TCP. You assert that the platform encrypts it | A mesh, or a CNI with encryption            |
-| `tls`      | Verifies the server and presents no certificate                    | RunSpec hops to ordinary HTTPS servers      |
+| Question                               | Setting                                 | Values                                                            |
+| -------------------------------------- | --------------------------------------- | ----------------------------------------------------------------- |
+| Is the connection encrypted?           | `enabled`                               | `true` verifies the server over `https://`. `false` is plain HTTP |
+| Does the client present a certificate? | `clientCert` on a client                | A `kubernetes.io/tls` Secret to present, or none                  |
+| Does the server ask for one?           | `clientAuth` on a server servtuner runs | `required`, `optional` (verify one if it is sent) or `none`       |
 
-Modes do not mix. `mtls` or `tls` with an `http://` URL, or `platform` with certificate settings, is an error. There is no option to skip verification.
+servtuner's own connections default to TLS, with client certificates required. A hop without TLS takes no certificate settings, and a hop with TLS needs an `https://` URL. Contradictions are errors. There is no option to skip verification.
 
 ## Prerequisites
 
-- For `mtls`, cert-manager with an issuer or `kubernetes.io/tls` Secrets.
+- With TLS, cert-manager with an issuer, or `kubernetes.io/tls` Secrets.
 
 ## Steps
 
 ### servtuner's own hops
 
-Set `tls.mode`, and override a hop under `tls.hops` when it differs:
+Set the defaults, and override a hop under `tls.hops` when it differs:
 
-| Hop               | Connection                            |
-| ----------------- | ------------------------------------- |
-| `ingressApi`      | Ingress or gateway to API             |
-| `benchApi`        | bench to API. Must equal `ingressApi` |
-| `postgres`        | API to Postgres                       |
-| `objectStore`     | API and bench to S3                   |
-| `benchPrometheus` | Chart-level Prometheus default        |
+| Hop               | Connection                    | Overrides                |
+| ----------------- | ----------------------------- | ------------------------ |
+| `ingressApi`      | Ingress or gateway to the API | `enabled`                |
+| `benchApi`        | bench to the API              | `enabled`, as ingressApi |
+| `postgres`        | API to Postgres               | `enabled`, `clientCert`  |
+| `objectStore`     | API and bench to S3           | `enabled`, `clientCert`  |
+| `benchPrometheus` | bench to Prometheus           | `enabled`, `clientCert`  |
 
 ```yaml
 tls:
-  mode: mtls
+  enabled: true
+  clientAuth: required
   source: cert-manager
   certManager:
     issuerRef: { kind: ClusterIssuer, name: your-issuer }
   hops:
-    benchPrometheus: platform
+    benchPrometheus: { enabled: false }
 ```
+
+`tls.clientAuth` is the API's own policy. With `required` or `optional`, bench presents its certificate to the API. With `optional`, a client without a certificate gets in on its sign-in or run token alone, and a certificate that is sent is still verified. The two API hops share one listener, so their `enabled` must agree.
+
+On a hop to a server servtuner does not run, `clientCert: false` presents no certificate. For Postgres, the API then signs in with a password over TLS.
 
 With `source: secret`, name a Secret for each component. The bench Secret must exist in the runs namespace.
 
 ### RunSpec hops
 
-Set `target.tls`, each `upstreams[].tls` and `prometheus.tls`. For `mtls`, name a Secret in `secretRef`. For `tls` with a private CA, name one in `caSecretRef`. Only its `ca.crt` is read.
+Set `target.tls`, each `upstreams[].tls` and `prometheus.tls`:
+
+```yaml
+tls:
+  enabled: true
+  clientCert: { secretRef: { name: servtuner-client } } # optional: present this certificate
+  caSecretRef: { name: vllm-ca } # optional: a private CA that signed the server
+```
+
+Only the `ca.crt` of `caSecretRef` is read. Plain HTTP is `tls: { enabled: false }`.
 
 ### Private CAs
 
 Each pod combines system CAs with the private CA and sets `SSL_CERT_FILE`. Do not point `SSL_CERT_FILE` at a private CA alone, because that replaces the system roots.
 
+## When to turn TLS off
+
+Turn TLS off on a hop only when something else encrypts it, such as a service mesh or a CNI with encryption, or for local testing. servtuner cannot check that claim. Every run records each hop's settings, so you can see what it relied on.
+
 ## Managed vLLM
 
-Managed vLLM offers `platform` (default) and `tls`. Each `tls` target has its own server certificate. `mtls` is not offered.
+Managed vLLM serves plain HTTP by default. `{ enabled: true }` gives each target its own server certificate. Client certificates are not offered yet.
+
+## Upgrade from servtuner 0.1
+
+servtuner 0.1 named one of three modes per hop. 0.2 rejects them and names the replacement.
+
+| servtuner 0.1                       | servtuner 0.2                                                 |
+| ----------------------------------- | ------------------------------------------------------------- |
+| `apiVersion: servtuner.dev/v1`      | `apiVersion: servtuner.dev/v2`                                |
+| `tls: { mode: mtls, secretRef: S }` | `tls: { enabled: true, clientCert: { secretRef: S } }`        |
+| `tls: { mode: tls }`                | `tls: { enabled: true }`                                      |
+| `tls: { mode: platform }`           | `tls: { enabled: false }`                                     |
+| Chart `tls.mode: mtls`              | `tls.enabled: true` with `tls.clientAuth: required`           |
+| Chart `tls.hops.postgres: platform` | `tls.hops.postgres: { enabled: false }`                       |
+| `--api-tls-mode mtls`               | `--api-tls true`, with `--tls-cert-file` and `--tls-key-file` |
+| Launcher `tls_mode: platform`       | `tls: false`                                                  |
+
+Saved targets, managed targets and schedules are converted when the API upgrades its database. Runs from 0.1 keep their original RunSpecs, which servtuner still reads.
 
 ## Verify
 
-`servtuner validate` rejects contradictory RunSpecs, and Helm rejects contradictory values. After a run, **Config** shows the mode of every hop.
+`servtuner validate` rejects contradictory RunSpecs, and Helm rejects contradictory values. After a run, **Config** shows each hop as TLS with a client certificate, TLS, or no TLS.
 
 ## Next steps
 
