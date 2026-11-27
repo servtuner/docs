@@ -20,14 +20,14 @@ SLO-max is the highest trustworthy rate at which every SLO holds. A good ladder 
 {/* schema: runspec */}
 
 ```yaml title="ladder.yaml" {20-25}
-apiVersion: servtuner.dev/v1
+apiVersion: servtuner.dev/v2
 kind: RunSpec
 name: capacity-ladder
 target:
   type: openai-compatible
   endpoint: http://localhost:18000/v1
   model: mock-model
-  tls: { mode: platform }
+  tls: { enabled: false }
 engine: { type: loadgen }
 workload:
   streaming: true

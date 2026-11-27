@@ -17,14 +17,14 @@ A RunSpec is YAML or JSON. servtuner stores it exactly as submitted, plus a reso
 {/* schema: runspec */}
 
 ```yaml title="run.yaml"
-apiVersion: servtuner.dev/v1
+apiVersion: servtuner.dev/v2
 kind: RunSpec
 name: example-run
 target:
   type: openai-compatible
   endpoint: http://localhost:18000/v1
   model: mock-model
-  tls: { mode: platform }
+  tls: { enabled: false }
 engine: { type: loadgen }
 workload:
   streaming: true

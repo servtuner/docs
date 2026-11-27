@@ -8,7 +8,7 @@ editUrl: false
 
 environment.json: what ran the benchmark and how each hop was secured.
 
-Schema file: `schema/json/bundle/environment.schema.json`. Generated from servtuner commit `505d4f5b031c`.
+Schema file: `schema/json/bundle/environment.schema.json`. Generated from servtuner commit `5730cfa50f08`.
 
 ## Top level
 
@@ -56,11 +56,11 @@ Type: `"1.1"`, `"2"`
 
 ### hopTransports
 
-Transport mode of every hop used by this run. A hop that was not used is omitted.
+How every hop used by this run was secured. A hop that was not used is omitted. Bundle format version 1 recorded a mode string per hop (mtls, tls or platform); readers upgrade it when they load such a bundle.
 
-| Field          | Type                                                      | Required | Description |
-| -------------- | --------------------------------------------------------- | -------- | ----------- |
-| `target`       | [transportMode](/reference/schemas/common/#transportmode) | Yes      |             |
-| `prometheus`   | [transportMode](/reference/schemas/common/#transportmode) | No       |             |
-| `api`          | [transportMode](/reference/schemas/common/#transportmode) | No       |             |
-| `object_store` | [transportMode](/reference/schemas/common/#transportmode) | No       |             |
+| Field          | Type                                                    | Required | Description |
+| -------------- | ------------------------------------------------------- | -------- | ----------- |
+| `target`       | [hopTransport](/reference/schemas/common/#hoptransport) | Yes      |             |
+| `prometheus`   | [hopTransport](/reference/schemas/common/#hoptransport) | No       |             |
+| `api`          | [hopTransport](/reference/schemas/common/#hoptransport) | No       |             |
+| `object_store` | [hopTransport](/reference/schemas/common/#hoptransport) | No       |             |

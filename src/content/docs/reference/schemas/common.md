@@ -8,7 +8,7 @@ editUrl: false
 
 Definitions shared by more than one servtuner schema.
 
-Schema file: `schema/json/common.schema.json`. Generated from servtuner commit `505d4f5b031c`.
+Schema file: `schema/json/common.schema.json`. Generated from servtuner commit `5730cfa50f08`.
 
 ## Definitions
 
@@ -18,11 +18,14 @@ A Go-style duration string such as "500ms", "120s" or "1m30s". The one duration 
 
 Type: `string` (pattern `^([0-9]+(\.[0-9]+)?(ns\|us\|ms\|s\|m\|h))+$`)
 
-### transportMode
+### hopTransport
 
-How one connection is secured. Never inferred.
+How one connection was secured: whether it used TLS, and whether servtuner presented a client certificate on it. Never inferred.
 
-Type: `"mtls"`, `"platform"`, `"tls"`
+| Field         | Type      | Required | Description                                                               |
+| ------------- | --------- | -------- | ------------------------------------------------------------------------- |
+| `tls`         | `boolean` | Yes      | The connection used TLS. False is plain HTTP or TCP.                      |
+| `client_cert` | `boolean` | Yes      | servtuner presented a client certificate on it. Always false without TLS. |
 
 ### utcTimestamp
 

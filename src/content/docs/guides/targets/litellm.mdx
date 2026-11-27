@@ -18,7 +18,7 @@ Measure LiteLLM as a router, with a real model server or a mock behind it.
 {/* schema: runspec */}
 
 ```yaml title="litellm.yaml"
-apiVersion: servtuner.dev/v1
+apiVersion: servtuner.dev/v2
 kind: RunSpec
 name: litellm-workers-2
 experiment: litellm-workers
@@ -38,8 +38,8 @@ target:
       workload:
         namespace: inference
         selector: { app: vllm }
-      tls: { mode: platform }
-  tls: { mode: platform }
+      tls: { enabled: false }
+  tls: { enabled: false }
 engine: { type: loadgen }
 workload:
   streaming: true
@@ -55,7 +55,7 @@ load:
 slos: { ttft_p95: 1s, max_error_rate: 0.01 }
 prometheus:
   url: http://prometheus.monitoring.svc:9090
-  tls: { mode: platform }
+  tls: { enabled: false }
 ```
 
 Declare every upstream with its own `tls`. servtuner never infers a transport mode.

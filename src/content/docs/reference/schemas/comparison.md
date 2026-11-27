@@ -8,7 +8,7 @@ editUrl: false
 
 comparison.json, written by servtuner compare: the experiment comparison. Runs with the same knobs are repeats of one configuration; each configuration's objectives carry a confidence interval across repeats (throughput objectives) or a bootstrap interval over the pooled per-request records (latency objectives). A configuration wins only when its interval does not overlap the runner-up's, or, with single samples, when it leads by more than twice the noise floor. Recomputable from the bundles.
 
-Schema file: `schema/json/comparison.schema.json`. Generated from servtuner commit `505d4f5b031c`.
+Schema file: `schema/json/comparison.schema.json`. Generated from servtuner commit `5730cfa50f08`.
 
 ## Top level
 

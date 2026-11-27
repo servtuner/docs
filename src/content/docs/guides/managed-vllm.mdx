@@ -42,7 +42,7 @@ On a GPU host:
     "cpu": "8",
     "memory": "32Gi",
     "model_cache": { "size": "100Gi" },
-    "transport": { "mode": "platform" }
+    "transport": { "enabled": false }
   }
 }
 ```
@@ -106,7 +106,7 @@ A **host** records a GPU machine outside Kubernetes: its hardware and its price.
 ## Ownership and safety
 
 - Every object carries `app.kubernetes.io/managed-by: servtuner` and `servtuner.dev/managed-target`. servtuner refuses to patch an object without both.
-- Transport is `platform` by default. `tls` gives each target its own server certificate. `mtls` is not offered.
+- Transport is plain HTTP by default (`{ enabled: false }`). `{ enabled: true }` gives each target its own server certificate. Client certificates are not offered yet.
 - An infeasible boot, such as too little GPU memory for the KV cache, is a result about the configuration.
 - While a tuning session uses the target, deploy, edit, scale-down and delete return 409.
 - Deleting a target removes what servtuner deployed and keeps the model cache volume and any seeded claim.

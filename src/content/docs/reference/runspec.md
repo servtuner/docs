@@ -8,13 +8,13 @@ editUrl: false
 
 One benchmark run: what to test, how to load it and what to record.
 
-Schema file: `schema/json/runspec.schema.json`. Generated from servtuner commit `505d4f5b031c`.
+Schema file: `schema/json/runspec.schema.json`. Generated from servtuner commit `5730cfa50f08`.
 
 ## Top level
 
 | Field             | Type                                              | Required | Description                                                                                |
 | ----------------- | ------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------ |
-| `apiVersion`      | `"servtuner.dev/v1"`                              | Yes      |                                                                                            |
+| `apiVersion`      | `"servtuner.dev/v2"`                              | Yes      |                                                                                            |
 | `kind`            | `"RunSpec"`                                       | Yes      |                                                                                            |
 | `name`            | `string`                                          | Yes      | DNS-label style run name. at most 63 characters; pattern `^[a-z0-9]([-a-z0-9]*[a-z0-9])?$` |
 | `experiment`      | `string`                                          | No       | Optional grouping of runs that are compared.                                               |
@@ -55,37 +55,37 @@ Names one key of a Kubernetes Secret.
 | `name` | `string` | Yes      |             |
 | `key`  | `string` | Yes      |             |
 
-### tlsMtls
+### tlsClientCert
 
-mtls: present a client certificate from the named kubernetes.io/tls Secret and verify the server.
+A client certificate to present: the tls.crt and tls.key of the named kubernetes.io/tls Secret.
 
 | Field       | Type                                       | Required | Description |
 | ----------- | ------------------------------------------ | -------- | ----------- |
-| `mode`      | `"mtls"`                                   | Yes      |             |
 | `secretRef` | [secretRef](/reference/runspec/#secretref) | Yes      |             |
 
-### tlsPlatform
+### tlsDisabled
 
-platform: plain HTTP, encryption asserted by the platform. Carries no certificate settings.
+enabled false: plain HTTP or TCP, with no TLS from servtuner. Use it where a service mesh or an encrypted CNI encrypts the connection, or for local testing. Carries no certificate settings.
 
-| Field  | Type         | Required | Description |
-| ------ | ------------ | -------- | ----------- |
-| `mode` | `"platform"` | Yes      |             |
+| Field     | Type    | Required | Description |
+| --------- | ------- | -------- | ----------- |
+| `enabled` | `false` | Yes      |             |
 
-### tlsServer
+### tlsEnabled
 
-tls: server-authenticated TLS. Verify the server against the system pool plus SSL\_CERT\_FILE, and the optional ca.crt of caSecretRef; present no client certificate, so there is no secretRef.
+enabled true: TLS. The server is verified against the system pool plus SSL\_CERT\_FILE, and the ca.crt of caSecretRef when it is set; the certificate of clientCert is presented when it is set.
 
-| Field         | Type                                       | Required | Description                                                                                      |
-| ------------- | ------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------ |
-| `mode`        | `"tls"`                                    | Yes      |                                                                                                  |
-| `caSecretRef` | [secretRef](/reference/runspec/#secretref) | No       | A Secret whose ca.crt is the private CA that signed the server certificate. Only ca.crt is read. |
+| Field         | Type                                               | Required | Description                                                                                      |
+| ------------- | -------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------ |
+| `enabled`     | `true`                                             | Yes      |                                                                                                  |
+| `clientCert`  | [tlsClientCert](/reference/runspec/#tlsclientcert) | No       |                                                                                                  |
+| `caSecretRef` | [secretRef](/reference/runspec/#secretref)         | No       | A Secret whose ca.crt is the private CA that signed the server certificate. Only ca.crt is read. |
 
 ### tls
 
-Transport security of one connection, discriminated by mode. Required wherever it appears: the mode is never inferred.
+Transport security of one connection on which servtuner is the client, discriminated by enabled. Required wherever it appears: it is never inferred.
 
-Type: [tlsMtls](/reference/runspec/#tlsmtls) or [tlsPlatform](/reference/runspec/#tlsplatform) or [tlsServer](/reference/runspec/#tlsserver)
+Type: [tlsDisabled](/reference/runspec/#tlsdisabled) or [tlsEnabled](/reference/runspec/#tlsenabled)
 
 ### workloadSelector
 

@@ -72,7 +72,7 @@ Scrape the host in a job such as `servtuner-external` with stable `namespace` an
 {/* schema: runspec */}
 
 ```yaml title="off-cluster.yaml" {8-11}
-apiVersion: servtuner.dev/v1
+apiVersion: servtuner.dev/v2
 kind: RunSpec
 name: off-cluster-vllm
 target:
@@ -83,7 +83,7 @@ target:
     job: servtuner-external
     namespace: servtuner-external
     pod: vllm-host
-  tls: { mode: platform }
+  tls: { enabled: false }
 engine: { type: loadgen }
 workload: { preset: chat-short@1, streaming: true }
 load:
@@ -91,7 +91,7 @@ load:
     - { rate: 4, duration: 120s }
 prometheus:
   url: http://prometheus.monitoring.svc:9090
-  tls: { mode: platform }
+  tls: { enabled: false }
 ```
 
 ## Verify

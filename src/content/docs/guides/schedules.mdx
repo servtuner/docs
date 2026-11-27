@@ -25,14 +25,14 @@ Schedule a RunSpec to catch regressions in SLO-max.
   "every_hours": 24,
   "regression_tolerance": 0.1,
   "spec": {
-    "apiVersion": "servtuner.dev/v1",
+    "apiVersion": "servtuner.dev/v2",
     "kind": "RunSpec",
     "name": "nightly-gateway",
     "target": {
       "type": "openai-compatible",
       "endpoint": "http://localhost:18000/v1",
       "model": "mock-model",
-      "tls": { "mode": "platform" }
+      "tls": { "enabled": false }
     },
     "engine": { "type": "loadgen" },
     "workload": {

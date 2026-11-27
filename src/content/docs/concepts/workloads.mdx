@@ -12,14 +12,14 @@ A workload gives the number of tokens each request should send and receive, as a
 {/* schema: runspec */}
 
 ```yaml title="lengths.yaml"
-apiVersion: servtuner.dev/v1
+apiVersion: servtuner.dev/v2
 kind: RunSpec
 name: lengths
 target:
   type: vllm
   endpoint: http://localhost:18000/v1
   model: mock-model
-  tls: { mode: platform }
+  tls: { enabled: false }
 engine: { type: loadgen }
 workload:
   streaming: true

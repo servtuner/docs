@@ -36,10 +36,10 @@ This page builds servtuner's images from a checkout and runs its end-to-end test
 3. Run an end-to-end test, or install the chart with your own values.
 
    ```sh
-   SERVTUNER_KUBE_CONTEXT=kind-servtuner-dev just e2e-platform
+   SERVTUNER_KUBE_CONTEXT=kind-servtuner-dev just e2e-tls-off
    ```
 
-The test installs into its own namespace and removes it at the end. `just e2e-mtls` covers certificates, `just e2e-gateway-mtls` the Gateway API, and `just e2e-forward-header` sign-in through a proxy. `just e2e-airgap <version>` builds its own cluster with no internet access; see [air-gapped installs](/deployment/air-gapped/).
+The test installs into its own namespace and removes it at the end. `just e2e-mutual-tls` covers TLS with client certificates, `just e2e-gateway-mutual-tls` the Gateway API, and `just e2e-forward-header` sign-in through a proxy. `just e2e-airgap <version>` builds its own cluster with no internet access; see [air-gapped installs](/deployment/air-gapped/).
 
 ## Single-node settings
 

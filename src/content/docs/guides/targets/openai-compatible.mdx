@@ -17,7 +17,7 @@ Use this type when the server has no servtuner catalog. You get every client-sid
 {/* schema: runspec */}
 
 ```yaml title="gateway.yaml"
-apiVersion: servtuner.dev/v1
+apiVersion: servtuner.dev/v2
 kind: RunSpec
 name: gateway-baseline
 target:
@@ -26,7 +26,7 @@ target:
   model: example-model
   auth:
     secretRef: { name: gateway-key, key: token }
-  tls: { mode: tls }
+  tls: { enabled: true }
 engine: { type: loadgen }
 workload:
   streaming: true
