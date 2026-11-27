@@ -8,7 +8,7 @@ editUrl: false
 
 charts/inflight.json, written by servtuner analyze for the Queueing tab: L(t), the client's requests in flight, sampled each second over the stages from the request records (each request from sent\_at for its E2E), and bucketed to at most 2000 points that keep each bucket's minimum and maximum; plus Little's law per stage. Warmup requests are left out.
 
-Schema file: `schema/json/bundle/chart-inflight.schema.json`. Generated from servtuner commit `049c80278666`.
+Schema file: `schema/json/bundle/chart-inflight.schema.json`. Generated from servtuner commit `505d4f5b031c`.
 
 ## Top level
 

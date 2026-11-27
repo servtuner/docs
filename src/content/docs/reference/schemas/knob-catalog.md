@@ -8,7 +8,7 @@ editUrl: false
 
 Every vLLM serve flag that is a knob (one value, not one servtuner sets itself), with its description, type, default and limits taken from vLLM's own source at the pinned version. servtuner knobs prints it from the catalog it embeds; the api serves it at GET /knobs.
 
-Schema file: `schema/json/knob-catalog.schema.json`. Generated from servtuner commit `049c80278666`.
+Schema file: `schema/json/knob-catalog.schema.json`. Generated from servtuner commit `505d4f5b031c`.
 
 ## Top level
 

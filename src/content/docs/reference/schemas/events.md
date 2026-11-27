@@ -8,7 +8,7 @@ editUrl: false
 
 One status event POSTed by bench to /runs/{id}/events. The Job or process exit status stays the final authority.
 
-Schema file: `schema/json/events.schema.json`. Generated from servtuner commit `049c80278666`.
+Schema file: `schema/json/events.schema.json`. Generated from servtuner commit `505d4f5b031c`.
 
 ## Top level
 
