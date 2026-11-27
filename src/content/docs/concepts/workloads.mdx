@@ -76,8 +76,9 @@ Every request sets `max_tokens` to its sampled output target. What happens next 
 `dataset.shared_prefix` models system prompts and tool definitions that many requests repeat, to exercise prefix caches.
 
 - **Layout.** `input_tokens` is the whole prompt. Each request has the run tag, then its group's prefix of `tokens` tokens, then text of its own that fills the rest of its input target, at least one token. Each request picks a group at random from `groups`.
-- **Stable bytes.** A group's prefix text is generated at its first use and kept for the whole run, byte for byte, so the server can cache it. Regenerating it when calibration moved would defeat the cache.
-- **Sizing.** A group's prefix is sized with the ratio at its first use: 4.0 if no warmup response has arrived yet, or the ratio calibrated so far. A group first used before calibration keeps a shorter prefix for the whole run, so the mean input can fall short of the target. How far depends on how soon warmup responses arrive. Against servtuner's mock server, which answers quickly, `agent-prefix` came out about 5% under its 2,048 tokens. Each request's own part uses the current ratio. To see the real lengths, compare the reported input tokens with the target, as shown in [Check a run](#check-a-run).
+- **Sizing.** Each group's text is one fixed sequence of words. A request's prefix is the start of it, `tokens` times the current ratio in characters, so prefixes get their calibrated length once warmup has calibrated the ratio.
+- **Cache reuse.** A longer cut starts with every shorter one. Warmup requests, sized before calibration, share their first bytes with the stage requests, and stage requests at one ratio share the whole prefix byte for byte, so the server can cache it.
+- **Before 0.1.1.** A group's prefix was sized once, at its first use, and kept for the run. Groups first used before calibration kept a shorter prefix: against servtuner's mock server, `agent-prefix` came out about 5% under its 2,048 tokens, and 1% over with 0.1.1. The fix changed the workload hash of shared-prefix workloads only, so runs from before and after it are not compared.
 
 ## Conversations
 
@@ -86,7 +87,7 @@ Every request sets `max_tokens` to its sampled output target. What happens next 
 - **History.** Each turn sends the whole conversation so far: the earlier user messages, `input_tokens` each, and synthetic assistant replies, `output_tokens` each, then the new user message. The replies are servtuner's text, not what the model answered, and they stay the same every turn, so the server sees a growing prefix that repeats.
 - **Input grows with each turn.** In a conversation, `input_tokens` sizes each user message, not each request. Turn _k_, counting from 0, sends about (_k_ + 1) × the input mean + _k_ × the output mean.
 - **Output.** A turn's output target is the length of the assistant reply that the next turn replays.
-- **Sizing.** Messages are generated once and kept, like shared prefixes. Messages written before calibration keep that sizing until their conversation restarts after its last turn.
+- **Sizing.** Messages are generated once and kept, because every later turn must repeat them byte for byte. Messages written before calibration keep that sizing until their conversation restarts after its last turn.
 
 For `chat-multiturn`, with 256 tokens in and 256 out over 6 turns:
 
@@ -130,12 +131,12 @@ Then:
 - Without the raw rows, divide a stage's `input_tokens_per_second` or `output_tokens_per_second` in `analysis.json` by its `achieved_rps`.
 - `environment.json` records `workload.chars_per_token`, the workload `hash` and the `generator`, such as `servtuner-synthetic/1`.
 
-| What you see                        | Likely cause                                                      | What to do                                                                                  |
-| ----------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| Mean input well off the target      | No warmup, or too few completed warmup requests                   | Keep a warmup. Check that `chars_per_token` is in `environment.json`                        |
-| Mean input low with a shared prefix | Groups first used before calibration kept a shorter prefix        | Compare the reported input with the target, and allow for the difference                    |
-| Mean output below the target        | The target is not `vllm`, so the model stopped at end-of-sequence | Expected through routers. Benchmark the vLLM behind it as a `vllm` target for exact lengths |
-| Requests fail with HTTP 400 on vLLM | Prompt plus `max_tokens` is over the model's context length       | Lower the lengths, or raise `max_model_len`                                                 |
+| What you see                        | Likely cause                                                                | What to do                                                                                  |
+| ----------------------------------- | --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Mean input well off the target      | No warmup, or too few completed warmup requests                             | Keep a warmup. Check that `chars_per_token` is in `environment.json`                        |
+| Mean input low with a shared prefix | servtuner 0.1.0: groups first used before calibration kept a shorter prefix | Upgrade to 0.1.1 or later                                                                   |
+| Mean output below the target        | The target is not `vllm`, so the model stopped at end-of-sequence           | Expected through routers. Benchmark the vLLM behind it as a `vllm` target for exact lengths |
+| Requests fail with HTTP 400 on vLLM | Prompt plus `max_tokens` is over the model's context length                 | Lower the lengths, or raise `max_model_len`                                                 |
 
 ## Next steps
 

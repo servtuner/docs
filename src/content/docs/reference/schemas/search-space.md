@@ -8,7 +8,7 @@ editUrl: false
 
 space.yaml, the input of servtuner propose: what a tuning session may change and how. Beyond the schema, servtuner propose checks that every knob is a vLLM knob, that a knob lists values or bounds but not both, that only max\_num\_seqs, max\_num\_batched\_tokens and max\_model\_len take bounds, and that no knob is both in base and tuned. Defaults: objective slo\_rps\_per\_gpu, noise\_floor 0.05, confirm top 3 and repeats 3; ladder probe\_rps 1 to 128 doubling, screen\_factors \[0.7, 0.85, 1, 1.15, 1.3\], full\_factors \[0.5, 0.7, 0.85, 0.95, 1, 1.05, 1.15, 1.3, 1.5\].
 
-Schema file: `schema/json/search-space.schema.json`. Generated from servtuner commit `ea52778da279`.
+Schema file: `schema/json/search-space.schema.json`. Generated from servtuner commit `505d4f5b031c`.
 
 ## Top level
 

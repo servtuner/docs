@@ -8,7 +8,7 @@ editUrl: false
 
 capacity.json (Replicas and HPA): what each traffic level would take of the workload under test, from the per-replica SLO-max RPS and the per-replica sizing. Always written; rows is empty, with a reason, when the run has no SLO-max. capacity.csv holds the same rows.
 
-Schema file: `schema/json/bundle/capacity.schema.json`. Generated from servtuner commit `ea52778da279`.
+Schema file: `schema/json/bundle/capacity.schema.json`. Generated from servtuner commit `505d4f5b031c`.
 
 ## Top level
 
