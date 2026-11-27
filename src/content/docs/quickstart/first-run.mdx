@@ -105,10 +105,10 @@ cd /tmp/servtuner-quickstart
 3. Start the mock in a second terminal.
 
    ```sh
-   go run github.com/servtuner/servtuner/deploy/mocks/openai-mock@main --tls-mode platform --listen 127.0.0.1:18000
+   go run github.com/servtuner/servtuner/deploy/mocks/openai-mock@505d4f5b031c8dcabe5d59bb33e43f7fdbbd55a6 --tls-mode platform --listen 127.0.0.1:18000
    ```
 
-   The first run downloads and builds the mock, which takes a minute.
+   The first run downloads and builds the mock, which takes a minute. The commit is release 0.1.1's, so the mock matches this CLI.
 
 4. Run the benchmark.
 
