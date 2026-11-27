@@ -1,0 +1,59 @@
+---
+title: Verify downloads
+description: Check that servtuner's images, chart and downloads were built and signed by its release workflow.
+sidebar:
+  label: Verify downloads
+---
+
+Every servtuner release is built and published by one GitHub Actions workflow, from a tag on `main`. It signs what it publishes with [cosign](https://docs.sigstore.dev/), using the workflow's own GitHub identity, so there is no key to distribute: a signature proves the artifact came from that workflow, run for a release tag.
+
+## Prerequisites
+
+- `cosign` 2 or newer, and `sha256sum` (`shasum -a 256` on macOS).
+- For images: `docker buildx`, to read provenance and SBOMs.
+
+Set the identity every signature must carry:
+
+```sh
+identity='^https://github\.com/servtuner/servtuner/\.github/workflows/release\.yml@refs/tags/v'
+issuer=https://token.actions.githubusercontent.com
+```
+
+## Downloads
+
+Every file of a release is listed in `checksums.txt`, and `checksums.txt.sigstore.json` is its signature. Check the signature once, then the files:
+
+```sh
+cosign verify-blob checksums.txt --bundle checksums.txt.sigstore.json \
+  --certificate-identity-regexp "$identity" --certificate-oidc-issuer "$issuer"
+sha256sum --check --ignore-missing checksums.txt
+```
+
+## Images
+
+```sh
+cosign verify ghcr.io/servtuner/servtuner-api:<version> \
+  --certificate-identity-regexp "$identity" --certificate-oidc-issuer "$issuer"
+```
+
+Do the same for `servtuner-bench` and `servtuner-frontend`. Each image also carries build provenance and an SBOM:
+
+```sh
+docker buildx imagetools inspect ghcr.io/servtuner/servtuner-api:<version> --format '{{json .Provenance}}'
+docker buildx imagetools inspect ghcr.io/servtuner/servtuner-api:<version> --format '{{json .SBOM}}'
+```
+
+## Chart
+
+```sh
+cosign verify ghcr.io/servtuner/charts/servtuner:<version> \
+  --certificate-identity-regexp "$identity" --certificate-oidc-issuer "$issuer"
+```
+
+## Without internet access
+
+The air-gapped archive carries each image's signature and attestations. After `hauler store copy` into your registry, verify against that registry. cosign then needs the Sigstore trust material offline: see cosign's documentation on offline verification.
+
+## Versions
+
+Releases are tagged `vX.Y.Z`. A tag with a suffix, such as `v0.1.0-rc.1`, is a pre-release: it is published and signed the same way, but is never tagged `latest`. See the [releases page](https://github.com/servtuner/servtuner/releases).

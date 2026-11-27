@@ -8,7 +8,7 @@ editUrl: false
 
 capacity\_model.json: everything the planner needs from one run, so servtuner plan never reads raw data. Per-stage curves are per replica: the run's achieved RPS over its ready replicas.
 
-Schema file: `schema/json/bundle/capacity-model.schema.json`. Generated from servtuner commit `5b46cdad0e5c`.
+Schema file: `schema/json/bundle/capacity-model.schema.json`. Generated from servtuner commit `ea52778da279`.
 
 ## Top level
 

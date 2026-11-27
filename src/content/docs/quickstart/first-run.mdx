@@ -9,24 +9,58 @@ Run a three-stage benchmark against the mock server that ships with servtuner. Y
 
 ## Prerequisites
 
-- A checkout of the servtuner repository: `git clone https://github.com/servtuner/servtuner`.
-- A Go toolchain. The `bench` module selects the version it needs.
+- Linux or macOS, on amd64 or arm64, with `curl`.
+- A Go toolchain, for the mock server. Go downloads the version the mock needs.
 - Port 18000 free.
+
+## Get the CLI
+
+Download servtuner from the [latest release](https://github.com/servtuner/servtuner/releases) and check it against the release's checksums.
+
+<Tabs syncKey="os">
+<TabItem label="Linux">
+
+```sh
+VERSION=<version> ARCH=amd64   # or arm64
+mkdir -p /tmp/servtuner-quickstart && cd /tmp/servtuner-quickstart
+base=https://github.com/servtuner/servtuner/releases/download/v$VERSION
+curl -fsSLO "$base/servtuner_${VERSION}_linux_${ARCH}.tar.gz" -O "$base/checksums.txt"
+sha256sum --check --ignore-missing checksums.txt
+tar -xzf "servtuner_${VERSION}_linux_${ARCH}.tar.gz" servtuner
+```
+
+</TabItem>
+<TabItem label="macOS">
+
+```sh
+VERSION=<version> ARCH=arm64   # or amd64
+mkdir -p /tmp/servtuner-quickstart && cd /tmp/servtuner-quickstart
+base=https://github.com/servtuner/servtuner/releases/download/v$VERSION
+curl -fsSLO "$base/servtuner_${VERSION}_darwin_${ARCH}.tar.gz" -O "$base/checksums.txt"
+shasum -a 256 --check --ignore-missing checksums.txt
+tar -xzf "servtuner_${VERSION}_darwin_${ARCH}.tar.gz" servtuner
+```
+
+</TabItem>
+<TabItem label="From source">
+
+```sh
+git clone https://github.com/servtuner/servtuner && cd servtuner
+mkdir -p /tmp/servtuner-quickstart
+(cd bench && go build -o /tmp/servtuner-quickstart/servtuner ./cmd/servtuner)
+cd /tmp/servtuner-quickstart
+```
+
+</TabItem>
+</Tabs>
+
+`./servtuner --version` prints the version. To check the signature of `checksums.txt` too, see [verify downloads](/deployment/verify/).
 
 ## Run it
 
 <Steps>
 
-1. Build servtuner and the mock server from the checkout.
-
-   ```sh
-   mkdir -p /tmp/servtuner-quickstart
-   (cd bench && go build -o /tmp/servtuner-quickstart/servtuner ./cmd/servtuner)
-   (cd deploy/mocks/openai-mock && go build -o /tmp/servtuner-quickstart/openai-mock .)
-   cd /tmp/servtuner-quickstart
-   ```
-
-2. Save this RunSpec as `quickstart.yaml`.
+1. Save this RunSpec as `quickstart.yaml`.
 
    {/* schema: runspec */}
 
@@ -58,7 +92,7 @@ Run a three-stage benchmark against the mock server that ships with servtuner. Y
 
    `platform` means plain HTTP. See [transport security](/deployment/transport-security/) before using it across a network.
 
-3. Validate it.
+2. Validate it.
 
    ```sh
    ./servtuner validate --spec quickstart.yaml
@@ -68,14 +102,15 @@ Run a three-stage benchmark against the mock server that ships with servtuner. Y
    ok: quickstart.yaml is a valid RunSpec (quickstart)
    ```
 
-4. Start the mock in a second terminal.
+3. Start the mock in a second terminal.
 
    ```sh
-   cd /tmp/servtuner-quickstart
-   ./openai-mock --tls-mode platform --listen 127.0.0.1:18000
+   go run github.com/servtuner/servtuner/deploy/mocks/openai-mock@main --tls-mode platform --listen 127.0.0.1:18000
    ```
 
-5. Run the benchmark.
+   The first run downloads and builds the mock, which takes a minute.
+
+4. Run the benchmark.
 
    ```sh
    ./servtuner run --spec quickstart.yaml --out ./quickstart-run

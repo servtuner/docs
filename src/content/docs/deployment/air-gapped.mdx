@@ -14,26 +14,29 @@ A servtuner release is one [Hauler](https://docs.hauler.dev/) archive that holds
 - On a connected machine: the release files.
 - On site: `helm` 3 or 4, `helmfile` v1.8.5 and `hauler` v2.1.2. No Helm plugin is needed.
 - A registry your nodes can pull from, or nodes whose container runtime you can point at a local one.
-- Your [site values and Secrets](/deployment/helm/#1-create-secrets-first), as for a connected install.
+- Your [site values and Secrets](/deployment/helm/#2-create-secrets-first), as for a connected install.
 
 ## The release
 
-| File                                              | What it holds                                                                                           |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
-| `servtuner-<version>.tar.zst`                     | servtuner's images, every prerequisite's images pinned by digest, the deploy bundle, and the CLI binary |
-| `servtuner-vllm-<version>.tar.zst`                | Optional: the managed vLLM images                                                                       |
-| `servtuner-flashinfer-<…>.tar.zst`                | Optional: FlashInfer's GPU kernels, for a host's vLLM or your own image                                 |
-| `servtuner-model-<name>.tar.zst`                  | Optional: one model's weights and licence, to [seed a claim](#model-weights)                            |
-| `SHA256SUMS`, `THIRD_PARTY_NOTICES`, `INSTALL.md` | Checksums, the licence of every bundled image and chart, and the install guide                          |
+Download these from the [release](https://github.com/servtuner/servtuner/releases) on a connected machine, with `checksums.txt` and its signature, and carry them to the site. See [verify downloads](/deployment/verify/).
+
+| File                                              | What it holds                                                                                                                 |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| `servtuner-<version>.tar.zst`                     | servtuner's images with their signatures, every prerequisite's images pinned by digest, the deploy bundle, and the CLI binary |
+| `servtuner-deploy-<version>.tar.gz`               | The deploy bundle on its own                                                                                                  |
+| `SHA256SUMS`, `THIRD_PARTY_NOTICES`, `INSTALL.md` | Checksums of the files above, the licence of every bundled image and chart, and the install guide                             |
+| `servtuner-vllm-<version>.tar.zst`                | Optional, built yourself: the managed vLLM images                                                                             |
+| `servtuner-flashinfer-<…>.tar.zst`                | Optional, built yourself: FlashInfer's GPU kernels, for a host's vLLM or your own image                                       |
+| `servtuner-model-<name>.tar.zst`                  | Optional, built yourself: one model's weights and licence, to [seed a claim](#model-weights)                                  |
 
 The deploy bundle holds the helmfile, its environments and values, the servtuner chart and every prerequisite chart, so the install needs no chart repository. servtuner bundles no price data and no model you did not choose.
 
-To build a release from a checkout on a connected machine:
+The optional archives are large and specific to a site, so releases do not publish them. Build them from a checkout of the release tag on a connected machine:
 
 ```sh
-just release 0.1.0                       # the core archive
-just release 0.1.0 --with-vllm           # also the managed vLLM images
-just release 0.1.0 --with-flashinfer --sm sm90a   # also FlashInfer's kernels, for those GPUs only
+just release <version> --with-vllm                       # also the managed vLLM images
+just release <version> --with-flashinfer --sm sm90a      # also FlashInfer's kernels, for those GPUs only
+just model-archive <name> <cache dir> <licence file>     # one model
 ```
 
 ## Steps

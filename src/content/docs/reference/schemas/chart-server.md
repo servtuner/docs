@@ -8,7 +8,7 @@ editUrl: false
 
 charts/server.json, written by servtuner analyze for the Server and Resources tabs: the server-side series the analysis reads, as the analysis derives them (pods selected, units normalized), and each target container's CPU and memory on its busiest pod with the captured requests and limits as reference lines. Each series has at most 2000 points that keep each bucket's minimum and maximum. A series that was not collected is absent: no evidence, never zero.
 
-Schema file: `schema/json/bundle/chart-server.schema.json`. Generated from servtuner commit `5b46cdad0e5c`.
+Schema file: `schema/json/bundle/chart-server.schema.json`. Generated from servtuner commit `ea52778da279`.
 
 ## Top level
 

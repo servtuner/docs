@@ -102,6 +102,7 @@ export default defineConfig({
                 'deployment/kind',
                 'deployment/helm',
                 'deployment/air-gapped',
+                'deployment/verify',
                 'deployment/launcher',
               ],
             },

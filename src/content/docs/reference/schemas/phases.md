@@ -8,7 +8,7 @@ editUrl: false
 
 phases.json: exact UTC windows of warmup, each stage and cooldown.
 
-Schema file: `schema/json/bundle/phases.schema.json`. Generated from servtuner commit `5b46cdad0e5c`.
+Schema file: `schema/json/bundle/phases.schema.json`. Generated from servtuner commit `ea52778da279`.
 
 ## Top level
 

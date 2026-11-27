@@ -8,7 +8,7 @@ editUrl: false
 
 summary.json, minimal v0: per-stage results and validity. Recomputable from the raw files by servtuner analyze.
 
-Schema file: `schema/json/bundle/summary.schema.json`. Generated from servtuner commit `5b46cdad0e5c`.
+Schema file: `schema/json/bundle/summary.schema.json`. Generated from servtuner commit `ea52778da279`.
 
 ## Top level
 

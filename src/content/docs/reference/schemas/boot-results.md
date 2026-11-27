@@ -8,7 +8,7 @@ editUrl: false
 
 The --infeasible file of servtuner propose: the boot probes made so far, each a deployment with no load. An infeasible result rules out every configuration whose knobs contain its knobs. A feasible result must name every feasibility knob of the search space; its c\_kv, below the space's min\_concurrency, drops the configuration. The probe of a combination is the base knobs plus the feasibility knobs' values.
 
-Schema file: `schema/json/boot-results.schema.json`. Generated from servtuner commit `5b46cdad0e5c`.
+Schema file: `schema/json/boot-results.schema.json`. Generated from servtuner commit `ea52778da279`.
 
 ## Top level
 

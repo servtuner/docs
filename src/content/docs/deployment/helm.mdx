@@ -7,7 +7,7 @@ sidebar:
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-servtuner installs as five Helm releases: cert-manager, CloudNativePG, Envoy Gateway, kube-prometheus-stack and servtuner itself. Each prerequisite is its upstream chart, unmodified, in its own release and namespace. You upgrade and roll back each one on its own, and skip any your cluster already runs. `deploy/helmfile.yaml.gotmpl` in the servtuner repository declares all five and installs them in order.
+servtuner installs as five Helm releases: cert-manager, CloudNativePG, Envoy Gateway, kube-prometheus-stack and servtuner itself. Each prerequisite is its upstream chart, unmodified, in its own release and namespace. You upgrade and roll back each one on its own, and skip any your cluster already runs. Each release's deploy bundle holds the helmfile that declares all five and installs them in order, pinned to that release.
 
 For a cluster with no internet access, follow [air-gapped installs](/deployment/air-gapped/) instead. It uses the same helmfile.
 
@@ -15,12 +15,26 @@ For a cluster with no internet access, follow [air-gapped installs](/deployment/
 
 - Kubernetes 1.35 or newer, and a default StorageClass. For real benchmarks, GPU nodes with the NVIDIA device plugin.
 - `helm` 3 or 4 and `helmfile` v1.8.5. `helmfile sync` needs no Helm plugin; `apply` and `diff` need helm-diff.
-- servtuner's images (`servtuner-api`, `servtuner-bench`, `servtuner-frontend`) in a registry your nodes can pull from. No public images are published yet: build them with `just images` and push them, or load a [release archive](/deployment/air-gapped/#the-release) into your registry.
+- Nodes that can pull from `ghcr.io`, where servtuner's images are published. Without internet access, follow [air-gapped installs](/deployment/air-gapped/).
 - ReadWriteMany storage for several nodes, or an S3-compatible store. See [storage](/deployment/storage/).
 
 ## Steps
 
-### 1. Create Secrets first
+### 1. Download the deploy bundle
+
+Download `servtuner-deploy-<version>.tar.gz` from the [release](https://github.com/servtuner/servtuner/releases), check it, and unpack it:
+
+```sh
+VERSION=<version>
+base=https://github.com/servtuner/servtuner/releases/download/v$VERSION
+curl -fsSLO "$base/servtuner-deploy-$VERSION.tar.gz" -O "$base/checksums.txt"
+sha256sum --check --ignore-missing checksums.txt
+tar -xzf "servtuner-deploy-$VERSION.tar.gz"   # writes deploy/
+```
+
+The chart in it defaults to the release's images, `ghcr.io/servtuner/servtuner-*:<version>`. To check signatures, see [verify downloads](/deployment/verify/).
+
+### 2. Create Secrets first
 
 No secret goes in a values file, the helmfile or the release. Values name a Kubernetes Secret, and you create it before the install.
 
@@ -33,7 +47,7 @@ No secret goes in a values file, the helmfile or the release. Values name a Kube
 
 The chart generates the first-admin setup token itself. See [authentication](/deployment/authentication/).
 
-### 2. Write your site values
+### 3. Write your site values
 
 Copy `deploy/helmfile/site-values.example.yaml` to `deploy/site-values.yaml`. Every value of the chart may go there; these are the ones every site decides.
 
@@ -85,7 +99,7 @@ rbac:
 
 Envoy Gateway installs the controller, not a `GatewayClass` or a `Gateway`: those are yours. `deploy/helmfile/envoy-gateway-class.yaml` is an example class. If your class names its own `EnvoyProxy`, give it `mergeType: StrategicMerge`. Otherwise it replaces Envoy Gateway's default proxy settings, including the registry the proxy image comes from.
 
-### 3. Install
+### 4. Install
 
 ```sh
 helmfile -f deploy/helmfile.yaml.gotmpl -e eks sync     # or -e kind for a local kind cluster
@@ -93,7 +107,7 @@ helmfile -f deploy/helmfile.yaml.gotmpl -e eks sync     # or -e kind for a local
 
 To use your own image registry, add `--state-values-set registry=registry.example:5000`. With a pull secret, also add `--state-values-set 'imagePullSecrets={regcred}'`.
 
-### 4. Sign in
+### 5. Sign in
 
 Open the hostname you set, create the first admin with the setup token, and sign in. See [authentication](/deployment/authentication/).
 
@@ -107,6 +121,13 @@ helmfile -f deploy/helmfile.yaml.gotmpl -e eks \
 ```
 
 servtuner then uses yours: cert-manager's CRDs, the CloudNativePG operator (or an external Postgres with `postgres.mode: external`), your Gateway API controller or an Ingress, and your Prometheus (`prometheus.url` in your site values).
+
+When your cluster already runs every prerequisite, install the chart alone from the registry:
+
+```sh
+helm install servtuner oci://ghcr.io/servtuner/charts/servtuner --version <version> \
+  --namespace servtuner --create-namespace -f site-values.yaml
+```
 
 ## Expose it
 

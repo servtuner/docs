@@ -8,7 +8,7 @@ editUrl: false
 
 One benchmark run: what to test, how to load it and what to record.
 
-Schema file: `schema/json/runspec.schema.json`. Generated from servtuner commit `5b46cdad0e5c`.
+Schema file: `schema/json/runspec.schema.json`. Generated from servtuner commit `ea52778da279`.
 
 ## Top level
 
