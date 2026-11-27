@@ -1,0 +1,22 @@
+# Dependabot version updates. Weekly, minor and patch updates grouped into one pull request per ecosystem, majors on
+# their own. A release must be 14 days old before it is proposed, so a bad or compromised release has time to be
+# pulled first. Pins stay exact: Dependabot rewrites the pinned version.
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 14 }
+    commit-message: { prefix: deps }
+    groups:
+      npm:
+        update-types: [minor, patch]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    cooldown: { default-days: 14 }
+    commit-message: { prefix: ci }
+    groups:
+      actions:
+        update-types: [minor, patch]
