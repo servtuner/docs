@@ -7,7 +7,7 @@ sidebar:
 
 import { Tabs, TabItem } from '@astrojs/starlight/components';
 
-servtuner installs as five Helm releases: cert-manager, CloudNativePG, Envoy Gateway, kube-prometheus-stack and servtuner itself. Each prerequisite is its upstream chart, unmodified, in its own release and namespace. You upgrade and roll back each one on its own, and skip any your cluster already runs. Each release's deploy bundle holds the helmfile that declares all five and installs them in order, pinned to that release.
+servtuner installs as seven Helm releases, each on its own: cert-manager, CloudNativePG, Envoy Gateway and kube-prometheus-stack (each its upstream chart, unmodified), servtuner's private CA and a Gateway (plain manifests), and servtuner itself. You upgrade and roll back each one on its own, and skip any your cluster already runs. Each release's deploy bundle holds the helmfile that declares all seven and installs them in order, pinned to that release. [Components](/deployment/components/) explains each one: what it does, how to bring your own, and how to check it.
 
 For a cluster with no internet access, follow [air-gapped installs](/deployment/air-gapped/) instead. It uses the same helmfile.
 
@@ -49,7 +49,7 @@ The chart generates the first-admin setup token itself. See [authentication](/de
 
 ### 3. Write your site values
 
-Copy `deploy/helmfile/site-values.example.yaml` to `deploy/site-values.yaml`. Every value of the chart may go there; these are the ones every site decides.
+Copy `deploy/helmfile/site-values.example.yaml` to `deploy/site-values.yaml`. Every value of the chart may go there, and it wins over the environment's values. The helmfile already points servtuner at its own issuer and Gateway; these are the values every site decides.
 
 <Tabs syncKey="tls">
   <TabItem label="TLS with client certificates (default)">
@@ -57,14 +57,8 @@ Copy `deploy/helmfile/site-values.example.yaml` to `deploy/site-values.yaml`. Ev
 ```yaml title="deploy/site-values.yaml"
 tls:
   enabled: true
-  source: cert-manager
-  certManager:
-    issuerRef: { kind: ClusterIssuer, name: your-issuer }
 gateway:
-  enabled: true
   hostname: servtuner.example.internal
-  parentRefs:
-    - { name: your-gateway, namespace: gateway-system }
 storage:
   file:
     pvc: { create: true, accessMode: ReadWriteMany, size: 100Gi }
@@ -82,10 +76,7 @@ tls:
 postgres:
   auth: password # a client certificate needs TLS
 gateway:
-  enabled: true
   hostname: servtuner.example.internal
-  parentRefs:
-    - { name: your-gateway, namespace: gateway-system }
 storage:
   file:
     pvc: { create: true, accessMode: ReadWriteMany, size: 100Gi }
@@ -99,19 +90,41 @@ rbac:
   </TabItem>
 </Tabs>
 
-Envoy Gateway installs the controller, not a `GatewayClass` or a `Gateway`: those are yours. `deploy/helmfile/envoy-gateway-class.yaml` is an example class. If your class names its own `EnvoyProxy`, give it `mergeType: StrategicMerge`. Otherwise it replaces Envoy Gateway's default proxy settings, including the registry the proxy image comes from.
+To use your own issuer, Gateway or Ingress instead of the helmfile's, see [components](/deployment/components/).
 
 ### 4. Install
 
 ```sh
-helmfile -f deploy/helmfile.yaml.gotmpl -e eks sync     # or -e kind for a local kind cluster
+helmfile -f deploy/helmfile.yaml.gotmpl -e eks sync
 ```
+
+On a cluster without a load balancer, add `--state-values-set gateway.serviceType=ClusterIP` and reach the Gateway as in [try it on kind](#try-it-on-kind).
 
 To use your own image registry, add `--state-values-set registry=registry.example:5000`. With a pull secret, also add `--state-values-set 'imagePullSecrets={regcred}'`.
 
 ### 5. Sign in
 
 Open the hostname you set, create the first admin with the setup token, and sign in. See [authentication](/deployment/authentication/).
+
+## Try it on kind
+
+The `kind` environment is a complete trial on a local kind cluster, with servtuner's defaults (TLS with client certificates). It needs no site values.
+
+```sh
+kind create cluster --name servtuner-trial
+helmfile -f deploy/helmfile.yaml.gotmpl -e kind sync
+kubectl -n servtuner wait --for=condition=Ready pod -l app.kubernetes.io/component=api --timeout=10m
+kubectl -n envoy-gateway-system port-forward \
+  "$(kubectl -n envoy-gateway-system get svc -l gateway.envoyproxy.io/owning-gateway-name=servtuner -o name)" 8080:80
+```
+
+Open `http://localhost:8080`, and create the first admin with the setup token:
+
+```sh
+kubectl -n servtuner get secret servtuner-setup-token -o jsonpath='{.data.token}' | base64 -d
+```
+
+To change a value, put it in `deploy/site-values.yaml`, which comes after the kind values, and run `sync` again. Remove the trial with `kind delete cluster --name servtuner-trial`.
 
 ## Skip a prerequisite
 
@@ -122,7 +135,7 @@ helmfile -f deploy/helmfile.yaml.gotmpl -e eks \
   --state-values-set install.certManager=false,install.prometheus=false sync
 ```
 
-servtuner then uses yours: cert-manager's CRDs, the CloudNativePG operator (or an external Postgres with `postgres.mode: external`), your Gateway API controller or an Ingress, and your Prometheus (`prometheus.url` in your site values).
+servtuner then uses yours. [Components](/deployment/components/) lists what each one needs: cert-manager's CRDs, an issuer that writes `ca.crt`, the CloudNativePG operator (or an external Postgres), Envoy Gateway with the Backend API (or your Ingress), and your Prometheus (`prometheus.url`).
 
 When your cluster already runs every prerequisite, install the chart alone from the registry:
 
@@ -136,12 +149,12 @@ helm install servtuner oci://ghcr.io/servtuner/charts/servtuner --version <versi
 <Tabs>
   <TabItem label="Gateway API">
 
-`gateway.enabled` renders two HTTPRoutes on one hostname: the UI, and the API under `<basePath>/api`. With TLS, an Envoy `Backend` presents the chart's client certificate to the API and a `BackendTLSPolicy` checks the API's name. Install Envoy Gateway with `enableBackend`.
+`gateway.enabled` renders two HTTPRoutes on one hostname: the UI, and the API under `<basePath>/api`. With TLS, an Envoy `Backend` presents the chart's client certificate to the API and a `BackendTLSPolicy` checks the API's name. The helmfile's Envoy Gateway has the Backend API on, and its `servtuner-gateway` release provides the Gateway.
 
   </TabItem>
   <TabItem label="Ingress">
 
-`ingress.enabled` renders the same two routes as Ingresses for ingress-nginx, which is retired upstream: prefer the Gateway API for new installs. With TLS, the API Ingress verifies the API with the chart's certificate. `ingress` and `gateway` are exclusive.
+`ingress.enabled` renders the same two routes as Ingresses for ingress-nginx, which is retired upstream: prefer the Gateway API for new installs. With TLS, the API Ingress verifies the API with the chart's certificate. `ingress` and `gateway` are exclusive. The helmfile installs no Ingress controller, so running yours is up to you.
 
   </TabItem>
 </Tabs>
@@ -162,6 +175,7 @@ Run `helmfile … sync` again with the new versions. The API migrates its databa
 helmfile -f deploy/helmfile.yaml.gotmpl -e eks list   # the releases and their versions
 kubectl -n servtuner get pods
 kubectl -n servtuner get certificates
+kubectl -n servtuner get gateway servtuner   # PROGRAMMED True
 ```
 
 Then save a target and run a connection check.
