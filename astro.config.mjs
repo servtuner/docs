@@ -1,5 +1,6 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
+import starlightLlmsTxt from 'starlight-llms-txt';
 import { BASE, INDEXED, SITE, VERSION } from './scripts/lib/site.mjs';
 
 export default defineConfig({
@@ -25,6 +26,27 @@ export default defineConfig({
         MobileMenuFooter: './src/components/MobileMenuFooter.astro',
       },
       routeMiddleware: './src/route-middleware.ts',
+      // llms.txt, llms-full.txt, llms-small.txt and one file per set, at this build's base (/next/llms.txt).
+      plugins: [
+        starlightLlmsTxt({
+          // The generated API and schema pages are most of the text, and 404 is not documentation: last in
+          // llms-full.txt, left out of llms-small.txt. (Only drafts leave llms-full.txt, and a draft is not built.)
+          demote: ['reference/api/**', 'reference/schemas/**', '404'],
+          exclude: ['reference/api/**', 'reference/schemas/**', '404'],
+          customSets: [
+            {
+              label: 'Deployment',
+              description: 'installing, verifying and configuring servtuner',
+              paths: ['deployment', 'deployment/**'],
+            },
+            {
+              label: 'Reference',
+              description: 'the CLI, RunSpec, bundle files, Helm values, configuration, API and schemas',
+              paths: ['reference', 'reference/**'],
+            },
+          ],
+        }),
+      ],
       // Only the latest release, at /, is for search engines; older versions and next are not.
       head: INDEXED ? [] : [{ tag: 'meta', attrs: { name: 'robots', content: 'noindex' } }],
       lastUpdated: false,

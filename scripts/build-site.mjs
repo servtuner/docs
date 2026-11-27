@@ -7,7 +7,7 @@
 // coverage and privacy checks under its base, and the assembled site its version checks (scripts/check-versions.mjs).
 // Writes site/versions.json for the picker and banner.
 import { execFileSync } from 'node:child_process';
-import { cpSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, resolve } from 'node:path';
 import { docsBranches, plan, releaseTags } from './versions.mjs';
@@ -70,6 +70,14 @@ if (!site.latest) {
 `,
   );
   cpSync(join(out, 'next', '404.html'), join(out, '404.html'));
+  // llms.txt is looked for at the site root; until a release is at /, it points at next's files.
+  writeFileSync(
+    join(out, 'llms.txt'),
+    readFileSync(join(out, 'next', 'llms.txt'), 'utf8').replace(
+      /^(> .*\n)/m,
+      '$1\nservtuner has no stable release yet; these files document unreleased servtuner (main).\n',
+    ),
+  );
 }
 cpSync('public/CNAME', join(out, 'CNAME'));
 writeFileSync(

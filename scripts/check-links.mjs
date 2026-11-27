@@ -1,4 +1,5 @@
-// Crawls every built page, served under DOCS_BASE, and checks internal links, anchors and assets.
+// Crawls every built page, served under DOCS_BASE, and checks internal links, anchors and assets, and the links in
+// the llms.txt files.
 import { globSync, readFileSync } from 'node:fs';
 import { BASE, SITE } from './lib/site.mjs';
 import { serve } from './serve.mjs';
@@ -54,9 +55,27 @@ for (const f of globSync('dist/_astro/*.css'))
       links += 1;
       if ((await get(new URL(m[1], `${origin}${BASE}${f.slice(5)}`).href)) !== 200) broken.push(`${f}: ${m[1]}`);
     }
+// llms.txt files (starlight-llms-txt; postbuild makes their links absolute): every link to this site, with its anchor.
+const llmsFiles = globSync(['dist/llms*.txt', 'dist/_llms-txt/*.txt']).sort();
+for (const f of llmsFiles)
+  for (const m of readFileSync(f, 'utf8').matchAll(/\]\(([^)\s]+)\)/g)) {
+    if (!m[1].startsWith(`${SITE}/`)) {
+      if (m[1].startsWith('/')) broken.push(`${f}: ${m[1]} (not absolute)`);
+      continue;
+    }
+    links += 1;
+    const target = new URL(new URL(m[1]).pathname + new URL(m[1]).hash, origin);
+    const hash = decodeURIComponent(target.hash.slice(1));
+    target.hash = '';
+    if ((await get(target.href)) !== 200) broken.push(`${f}: ${m[1]}`);
+    else if (hash) {
+      anchors += 1;
+      if (!ids.get(target.href)?.has(hash)) broken.push(`${f}: ${m[1]} (no such anchor)`);
+    }
+  }
 server.close();
 [...new Set(broken)].forEach((b) => console.error(`BROKEN ${b}`));
 console.log(
-  `check-links: ${pages.length} pages, ${links} internal references, ${anchors} anchors, ${status.size} distinct URLs, ${broken.length} broken`,
+  `check-links: ${pages.length} pages, ${llmsFiles.length} llms files, ${links} internal references, ${anchors} anchors, ${status.size} distinct URLs, ${broken.length} broken`,
 );
-process.exit(broken.length || !pages.length ? 1 : 0);
+process.exit(broken.length || !pages.length || !llmsFiles.length ? 1 : 0);
