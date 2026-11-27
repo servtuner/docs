@@ -79,6 +79,8 @@ rbac:
 ```yaml title="deploy/site-values.yaml"
 tls:
   enabled: false
+postgres:
+  auth: password # a client certificate needs TLS
 gateway:
   enabled: true
   hostname: servtuner.example.internal
@@ -92,7 +94,7 @@ rbac:
     targetNamespaces: [inference]
 ```
 
-`tls.enabled: false` states that something else, such as a service mesh or an encrypted CNI, encrypts this traffic. servtuner cannot check that.
+`tls.enabled: false` states that something else, such as a service mesh or an encrypted CNI, encrypts this traffic. servtuner cannot check that. Without TLS, the API signs in to Postgres with a password.
 
   </TabItem>
 </Tabs>

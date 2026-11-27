@@ -8,7 +8,7 @@ editUrl: false
 
 proposal.json, written by servtuner propose: the next configurations of a tuning session to boot or run, each with its ladder and a rationale, or a done verdict. A pure function of the search space, the boot results and the analysed bundles: the same inputs give the same bytes. The caller sets the labels of each proposal on the RunSpec it makes (servtuner.dev/tuning-ladder and servtuner.dev/tuning-config); servtuner propose classifies bundles by the ladder label.
 
-Schema file: `schema/json/proposal.schema.json`. Generated from servtuner commit `5730cfa50f08`.
+Schema file: `schema/json/proposal.schema.json`. Generated from servtuner commit `e6069c17f6fe`.
 
 ## Top level
 

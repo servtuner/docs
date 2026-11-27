@@ -65,11 +65,9 @@ tls:
   source: cert-manager
   certManager:
     issuerRef: { kind: ClusterIssuer, name: your-issuer }
-  hops:
-    objectStore: { enabled: true, clientCert: false }
 ```
 
-Leave `endpoint` empty. servtuner uses the AWS SDK credential chain, such as EKS Pod Identity. AWS S3 is HTTPS, and no client certificate is sent to it.
+Leave `endpoint` empty. servtuner uses the AWS SDK credential chain, such as EKS Pod Identity. AWS S3 is HTTPS with the system CAs, and no client certificate is sent to it.
 
   </TabItem>
 </Tabs>

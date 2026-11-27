@@ -41,7 +41,8 @@ This page is for developing servtuner: it runs everything from a checkout. To tr
    export SERVTUNER_RUNNER=subprocess SERVTUNER_BENCH_BINARY=/tmp/servtuner
    export SERVTUNER_DATA_DIR=/tmp/servtuner-data SERVTUNER_API_PORT=18080 SERVTUNER_TLS_ENABLED=false
    export SERVTUNER_DATABASE_HOST=127.0.0.1 SERVTUNER_DATABASE_PORT=15432 SERVTUNER_DATABASE_NAME=servtuner
-   export SERVTUNER_DATABASE_USER=servtuner SERVTUNER_DATABASE_PASSWORD=local-only SERVTUNER_DATABASE_SSLMODE=disable
+   export SERVTUNER_DATABASE_USER=servtuner SERVTUNER_DATABASE_SSLMODE=disable
+   export SERVTUNER_DATABASE_AUTH=password SERVTUNER_DATABASE_PASSWORD=local-only
    uv run --project api servtuner-api
    ```
 

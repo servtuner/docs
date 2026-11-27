@@ -283,7 +283,7 @@
   },
   {
     "name": "`SERVTUNER_TLS_ENABLED`",
-    "meaning": "whether hops use TLS: each hop's default, never inferred",
+    "meaning": "whether connections use TLS: each connection's default, never inferred",
     "values": "`true`, `false`",
     "readBy": "api"
   },
@@ -294,21 +294,15 @@
     "readBy": "api; runner"
   },
   {
-    "name": "`SERVTUNER_TLS_HOP_BENCH_API_ENABLED`, `_BENCH_PROMETHEUS_ENABLED`, `_INGRESS_API_ENABLED`, `_OBJECT_STORE_ENABLED`, `_POSTGRES_ENABLED`",
-    "meaning": "whether each hop uses TLS",
+    "name": "`SERVTUNER_TLS_CONNECTION_BENCH_API`, `_BENCH_PROMETHEUS`, `_INGRESS_API`, `_OBJECT_STORE`, `_POSTGRES`",
+    "meaning": "whether each connection uses TLS, overriding `SERVTUNER_TLS_ENABLED`. With TLS, each component presents its one certificate; the server decides whether to ask for it",
     "values": "`true`, `false`",
-    "readBy": "api; runner passes bench's hops to Jobs"
-  },
-  {
-    "name": "`SERVTUNER_TLS_HOP_BENCH_PROMETHEUS_CLIENT_CERT`, `_OBJECT_STORE_CLIENT_CERT`, `_POSTGRES_CLIENT_CERT`",
-    "meaning": "whether servtuner presents its client certificate to a server it does not run; `true` by default with TLS",
-    "values": "`true`, `false`",
-    "readBy": "api; runner"
+    "readBy": "api; runner passes bench's connections to Jobs"
   },
   {
     "name": "`SERVTUNER_TLS_CERT_FILE`, `SERVTUNER_TLS_KEY_FILE`",
     "meaning": "api certificate and key (mounted `kubernetes.io/tls` Secret)",
-    "values": "path; set only when a hop uses the api's certificate",
+    "values": "path; set only when a connection uses the api's certificate",
     "readBy": "api"
   },
   {
@@ -326,7 +320,7 @@
   {
     "name": "`SERVTUNER_TLS_CA_SECRET`",
     "meaning": "Secret in the runs namespace whose `ca.crt` verifies the api for bench (`servtuner run --tls-ca-file`): `tls.caSecretRef`, else the bench Secret (cert-manager writes the issuing CA into it). With `tls.caSecretRef` and a separate runs namespace, that Secret must exist in the runs namespace too",
-    "values": "Secret name; only when the bench-api hop uses TLS",
+    "values": "Secret name; only when the bench-api connection uses TLS",
     "readBy": "api (runner)"
   },
   {
@@ -338,7 +332,7 @@
   {
     "name": "`SSL_CERT_FILE`",
     "meaning": "combined system + private CA bundle built by the init container",
-    "values": "`/etc/servtuner/ca/bundle.crt`; set only when some hop uses TLS",
+    "values": "`/etc/servtuner/ca/bundle.crt`; set only when some connection uses TLS",
     "readBy": "api (standard)"
   },
   {
@@ -349,13 +343,19 @@
   },
   {
     "name": "`SERVTUNER_DATABASE_SSLMODE`",
-    "meaning": "Postgres TLS",
-    "values": "`verify-full` (client cert), `disable`",
+    "meaning": "Postgres TLS; must agree with the postgres connection",
+    "values": "`verify-full`, `disable`",
+    "readBy": "api"
+  },
+  {
+    "name": "`SERVTUNER_DATABASE_AUTH`",
+    "meaning": "how the api signs in to Postgres (chart `postgres.auth`): its client certificate, whose CN is the user (needs TLS), or a password",
+    "values": "`certificate` (default), `password`",
     "readBy": "api"
   },
   {
     "name": "`SERVTUNER_DATABASE_PASSWORD`",
-    "meaning": "database password; set only when the postgres hop presents no client certificate (without TLS, or with `tls.hops.postgres.clientCert: false`)",
+    "meaning": "database password; set only with `SERVTUNER_DATABASE_AUTH=password`",
     "values": "from a Secret",
     "readBy": "api"
   },

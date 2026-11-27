@@ -8,7 +8,7 @@ editUrl: false
 
 target/snapshot-pre.json and target/snapshot-post.json: the target workload and each upstream, read-only, before and after the load. The two files share this schema and differ in phase.
 
-Schema file: `schema/json/bundle/target-snapshot.schema.json`. Generated from servtuner commit `5730cfa50f08`.
+Schema file: `schema/json/bundle/target-snapshot.schema.json`. Generated from servtuner commit `e6069c17f6fe`.
 
 ## Top level
 
