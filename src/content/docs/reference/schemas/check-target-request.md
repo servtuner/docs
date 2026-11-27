@@ -8,7 +8,7 @@ editUrl: false
 
 servtuner check-target's input: the RunSpec target to check and, optionally, the Prometheus that would collect its series. The same definitions a RunSpec uses, so a check exercises what a run would. Secrets are named, never inlined; bench reads them from --secrets-dir.
 
-Schema file: `schema/json/check-target-request.schema.json`. Generated from servtuner commit `5730cfa50f08`.
+Schema file: `schema/json/check-target-request.schema.json`. Generated from servtuner commit `e6069c17f6fe`.
 
 ## Top level
 
