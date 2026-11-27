@@ -50,6 +50,8 @@ load:
 | `preset`                                | A [named workload](/guides/workload-presets/) instead of `dataset` and `conversation` |
 | `seed`                                  | Makes the generated requests repeatable                                               |
 
+See [workloads and token lengths](/concepts/workloads/) for how servtuner meets the means, and how to check a run.
+
 ### 3. Shape the load
 
 Each stage offers a rate for a duration. `pacing` is `constant`, `poisson`, `linear` or `sine`. Use `poisson` when you want random arrivals. Warmup defaults to 30 seconds and stays out of summaries.

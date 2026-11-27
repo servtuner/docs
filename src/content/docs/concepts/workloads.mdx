@@ -1,0 +1,142 @@
+---
+title: Workloads and token lengths
+description: How servtuner generates synthetic requests and lands on the mean input and output token counts a workload asks for.
+---
+
+A workload gives the number of tokens each request should send and receive, as a mean and a standard deviation. servtuner carries no tokenizer for your model, so it cannot write a prompt of exactly _N_ tokens. This page explains how each engine gets close, how close it gets, and how to check a run.
+
+## The token distributions
+
+`dataset.input_tokens` and `dataset.output_tokens` each take a `mean` and an optional `stddev`, which defaults to 0.
+
+{/* schema: runspec */}
+
+```yaml title="lengths.yaml"
+apiVersion: servtuner.dev/v1
+kind: RunSpec
+name: lengths
+target:
+  type: vllm
+  endpoint: http://localhost:18000/v1
+  model: mock-model
+  tls: { mode: platform }
+engine: { type: loadgen }
+workload:
+  streaming: true
+  seed: 7
+  dataset:
+    type: synthetic
+    input_tokens: { mean: 1024, stddev: 256 }
+    output_tokens: { mean: 256, stddev: 64 }
+load:
+  warmup: 30s
+  stages:
+    - { rate: 4, duration: 120s }
+```
+
+- **Sampling.** Each request draws its input and output lengths from a normal distribution, rounds them, and raises anything below 1 to 1 token. With `stddev: 0`, every request has the same length.
+- **Repeatable.** Request _i_ depends only on the seed and _i_, so a run with the same workload and seed sends the same lengths in the same order. The [workload hash](/concepts/trustworthy-rps/#what-must-match) covers the distributions, the seed and the generator version.
+- **The floor at 1 token.** It raises the mean only when the standard deviation is large compared with the mean. Among the [presets](/guides/workload-presets/), only `chat-long` is affected: about 2.3% of its draws hit the floor, which adds about 4 tokens to its input mean of 1,024 and about 1 token to its output mean of 256. The others move by less than 0.01 tokens.
+
+## Input tokens with loadgen
+
+loadgen sizes prompts in characters and learns how many characters make a token.
+
+1. **Text.** Prompts are random sequences of 281 common English words. Each is about one token in most tokenizers, so the characters-per-token ratio is stable for a given model.
+2. **Sizing.** A prompt's length in characters is its sampled token target times the ratio. The ratio starts at 4.0.
+3. **Calibration.** Every warmup response carries `usage.prompt_tokens`. loadgen divides the total characters sent by the total tokens reported, per model, so the estimate improves as warmup goes on. Streaming requests set `stream_options.include_usage` so that usage arrives.
+4. **Measurement.** Only warmup requests feed the ratio, so it settles before servtuner measures. A warmup request counts when its response arrives, which can be early in the first stage when requests are long. The calibrated ratio is recorded as `workload.chars_per_token` in `environment.json`.
+
+The chat template adds tokens that the prompt's characters do not account for. They are in the reported count, so calibration absorbs them, and the mean input lands close to the target with the template counted. Because the template's tokens are the same in every request, short prompts come out slightly over their targets and long ones slightly under, while the mean stays close.
+
+:::caution[Keep a warmup]
+Only warmup calibrates. With `load.warmup: 0s`, the ratio stays 4.0 for the whole run. The words average 5.3 characters each, including the space. If each is one token, the true ratio is about 5.3, and an uncalibrated prompt comes out about a quarter short. Make sure several warmup requests complete: at low rates with long requests, lengthen the warmup beyond its default of 30 seconds.
+:::
+
+Two smaller effects:
+
+- **The run tag.** Every prompt starts with a 19-character tag derived from the run ID, so no two runs share a prompt prefix and a warm prefix cache cannot carry over from one run to the next. Its characters come out of the prompt's budget, and it is not part of the workload hash.
+- **Shards.** With [`engine.shards`](/concepts/engines/#sharding), each shard calibrates from its own warmup requests. Together, the shards send exactly the sequence one engine would.
+
+## Output tokens
+
+Every request sets `max_tokens` to its sampled output target. What happens next depends on the target type.
+
+| `target.type`                                | What loadgen sends                        | Output length                                                               |
+| -------------------------------------------- | ----------------------------------------- | --------------------------------------------------------------------------- |
+| `vllm`                                       | `max_tokens` and `min_tokens`, both equal | Exactly the target                                                          |
+| `litellm`, `bifrost` and `openai-compatible` | `max_tokens` only                         | At most the target. The model may stop earlier at its end-of-sequence token |
+
+- **Routers.** loadgen sends `min_tokens` only to `vllm` targets, because other servers may ignore the field or reject it. This applies even when a router forwards to vLLM, so the mean output through a router can fall below the target. To measure decode load at exact lengths, also benchmark the vLLM behind the router as a `vllm` target.
+- **The hash.** `min_tokens` changes what the server generates, so it is part of the workload hash. The same workload run against a `vllm` target and an `openai-compatible` target gets two hashes, and the two runs are not compared.
+- **Counting.** Throughput, capacity and cost always use the token counts the server reported, never the targets.
+
+## Shared prefixes
+
+`dataset.shared_prefix` models system prompts and tool definitions that many requests repeat, to exercise prefix caches.
+
+- **Layout.** `input_tokens` is the whole prompt. Each request has the run tag, then its group's prefix of `tokens` tokens, then text of its own that fills the rest of its input target, at least one token. Each request picks a group at random from `groups`.
+- **Stable bytes.** A group's prefix text is generated at its first use and kept for the whole run, byte for byte, so the server can cache it. Regenerating it when calibration moved would defeat the cache.
+- **Sizing.** Because the prefix is generated at its first use, which is usually the first few warmup requests, it is sized with the ratio at that moment, usually 4.0. So the prefix's real length is what the model's tokenizer makes of text sized at 4.0 characters per token, which can be shorter than `tokens`. Each request's own part uses the calibrated ratio. To see the real lengths, compare the reported input tokens with the target, as shown in [Check a run](#check-a-run).
+
+## Conversations
+
+`workload.conversation` builds multi-turn chat. `turns` is the conversation length and `concurrent`, 64 by default, is how many conversations interleave.
+
+- **History.** Each turn sends the whole conversation so far: the earlier user messages, `input_tokens` each, and synthetic assistant replies, `output_tokens` each, then the new user message. The replies are servtuner's text, not what the model answered, and they stay the same every turn, so the server sees a growing prefix that repeats.
+- **Input grows with each turn.** In a conversation, `input_tokens` sizes each user message, not each request. Turn _k_, counting from 0, sends about (_k_ + 1) × the input mean + _k_ × the output mean.
+- **Output.** A turn's output target is the length of the assistant reply that the next turn replays.
+- **Sizing.** Messages are generated once and kept, like shared prefixes. Messages written before calibration keep that sizing until their conversation restarts after its last turn.
+
+For `chat-multiturn`, with 256 tokens in and 256 out over 6 turns:
+
+| Turn                | 1   | 2   | 3     | 4     | 5     | 6     |
+| ------------------- | --- | --- | ----- | ----- | ----- | ----- |
+| Input tokens, about | 256 | 768 | 1,280 | 1,792 | 2,304 | 2,816 |
+
+The mean input per request is about 1,536 tokens, six times the per-message mean.
+
+## Padding
+
+`dataset.padding_bytes` appends filler made of the same words after the prompt, to test how routers handle larger bodies. The filler counts toward the reported input tokens, so the mean input is about `input_tokens` plus `padding_bytes` divided by the calibrated ratio.
+
+## With inference-perf
+
+The `inference-perf` engine sizes prompts in tokens directly.
+
+- **Input.** Prompts are random token IDs at exact lengths, from the tokenizer named in `engine.options.tokenizer`, which defaults to `target.model`. inference-perf supports only the completions API, so no chat template is added.
+- **Distributions.** A `stddev` becomes a normal distribution clamped to the mean ± 4 standard deviations, at least 1 token. Without one, every request has the same length, and the mean must be a whole number.
+- **Output.** The pinned inference-perf asks the server to ignore the end-of-sequence token, so vLLM generates the full `max_tokens`. Servers that do not support that option may stop earlier.
+- **Shared prefixes.** These map to inference-perf's shared-prefix data: a system prompt of `tokens` tokens per group, then a question of `input_tokens` minus `tokens`.
+- **Counting.** Token counts come from the server's usage when it reports them, and from inference-perf's tokenizer otherwise.
+
+## Check a run
+
+`requests.parquet` in the [run bundle](/concepts/run-bundles/) has one row per request with the `input_tokens` and `output_tokens` the server reported. To see the mean lengths each stage achieved, query it with [DuckDB](https://duckdb.org/):
+
+```sql
+SELECT stage_index,
+       count(*) AS requests,
+       round(avg(input_tokens)) AS mean_input,
+       round(avg(output_tokens)) AS mean_output
+FROM 'requests.parquet'
+WHERE phase = 'stage' AND error IS NULL
+GROUP BY stage_index
+ORDER BY stage_index;
+```
+
+Then:
+
+- Without the raw rows, divide a stage's `input_tokens_per_second` or `output_tokens_per_second` in `analysis.json` by its `achieved_rps`.
+- `environment.json` records `workload.chars_per_token`, the workload `hash` and the `generator`, such as `servtuner-synthetic/1`.
+
+| What you see                        | Likely cause                                                      | What to do                                                                                  |
+| ----------------------------------- | ----------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Mean input well off the target      | No warmup, or too few completed warmup requests                   | Keep a warmup. Check that `chars_per_token` is in `environment.json`                        |
+| Mean input low with a shared prefix | The prefix was sized before calibration                           | Compare the prefix size with the reported input, and allow for it                           |
+| Mean output below the target        | The target is not `vllm`, so the model stopped at end-of-sequence | Expected through routers. Benchmark the vLLM behind it as a `vllm` target for exact lengths |
+| Requests fail with HTTP 400 on vLLM | Prompt plus `max_tokens` is over the model's context length       | Lower the lengths, or raise `max_model_len`                                                 |
+
+## Next steps
+
+Write lengths into a [RunSpec](/guides/runspecs/), start from a [preset](/guides/workload-presets/), or see how lengths affect [trustworthy RPS](/concepts/trustworthy-rps/).
