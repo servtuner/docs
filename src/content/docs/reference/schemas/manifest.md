@@ -8,7 +8,7 @@ editUrl: false
 
 manifest.json: written last, so the API never indexes a half-written bundle.
 
-Schema file: `schema/json/bundle/manifest.schema.json`. Generated from servtuner commit `e6069c17f6fe`.
+Schema file: `schema/json/bundle/manifest.schema.json`. Generated from servtuner commit `9fbc13619183`.
 
 ## Top level
 

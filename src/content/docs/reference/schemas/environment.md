@@ -8,7 +8,7 @@ editUrl: false
 
 environment.json: what ran the benchmark and how each hop was secured.
 
-Schema file: `schema/json/bundle/environment.schema.json`. Generated from servtuner commit `e6069c17f6fe`.
+Schema file: `schema/json/bundle/environment.schema.json`. Generated from servtuner commit `9fbc13619183`.
 
 ## Top level
 

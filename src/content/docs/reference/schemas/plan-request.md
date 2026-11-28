@@ -8,7 +8,7 @@ editUrl: false
 
 servtuner plan's input (Planner inputs): the traffic to plan for, the SLO, availability and overrides. The capacity models are passed beside it.
 
-Schema file: `schema/json/plan-request.schema.json`. Generated from servtuner commit `e6069c17f6fe`.
+Schema file: `schema/json/plan-request.schema.json`. Generated from servtuner commit `9fbc13619183`.
 
 ## Top level
 
