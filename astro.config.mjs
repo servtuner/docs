@@ -9,7 +9,7 @@ export default defineConfig({
   base: BASE,
   trailingSlash: 'always',
   // The managed servers guide was the managed vLLM guide; keep old links working.
-  redirects: { '/guides/managed-vllm/': '/guides/managed-servers/' },
+  redirects: { '/guides/managed-vllm/': `${BASE}guides/managed-servers/` },
   integrations: [
     starlight({
       title: 'servtuner',
