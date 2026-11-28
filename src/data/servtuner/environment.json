@@ -6,6 +6,12 @@
     "readBy": "frontend"
   },
   {
+    "name": "`SERVTUNER_VERSION`, `SERVTUNER_COMMIT`",
+    "meaning": "the build, reported by `GET /version`; the api image sets them from the release tag and commit, the chart does not",
+    "values": "version (`0.0.0-dev` unstamped), full commit (`unknown`)",
+    "readBy": "api"
+  },
+  {
     "name": "`SERVTUNER_SCHEMA_DIR`",
     "meaning": "directory of the RunSpec and event schemas (`schema/json`); the api image sets it, the chart does not",
     "values": "path",

@@ -119,8 +119,8 @@ const RESOURCES = [
   [
     'system',
     'Validation and system API',
-    'Validate specs, list workload presets, knobs and search spaces, read run defaults and check health.',
-    /^\/(specs|workload-presets|healthz|knobs|search-spaces|run-defaults)/,
+    'Validate specs, list workload presets, knobs and search spaces, read run defaults, check health and read the version.',
+    /^\/(specs|workload-presets|healthz|version|knobs|search-spaces|run-defaults)/,
   ],
   ['hosts', 'Hosts API', 'Register GPU hosts outside Kubernetes, price them and read their hardware.', /^\/hosts/],
   ['price-book', 'Price book API', "Edit the install's prices and its token-price datasheet.", /^\/price-book/],
@@ -162,6 +162,7 @@ const summaries = {
   'GET /experiments': 'Lists experiments.',
   'GET /experiments/{name}': 'Returns one experiment with its runs, comparison and latest analysis.',
   'GET /healthz': 'Reports that the API process is serving.',
+  'GET /version': 'Returns the running version and commit, for signed-in users.',
   'GET /managed-targets': 'Lists managed targets.',
   'GET /managed-targets/{target_id}': 'Returns one managed target.',
   'PUT /managed-targets/{target_id}': 'Replaces a managed target. Refused while an active session uses it.',
