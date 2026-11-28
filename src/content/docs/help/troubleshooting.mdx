@@ -37,7 +37,7 @@ description: Diagnose invalid specs, failed runs, missing metrics and surprising
 | Empty GPU panels           | Install DCGM exporter, or accept lower confidence                             |
 | LiteLLM metrics return 401 | Give its scrape job a key                                                     |
 
-## Managed vLLM
+## Managed Servers
 
 | Symptom                                                      | Do this                                                                                                                         |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------- |
@@ -48,7 +48,7 @@ description: Diagnose invalid specs, failed runs, missing metrics and surprising
 | Launcher refuses requests                                    | Check its token, URL and TLS mode                                                                                               |
 | Boot fails with a model download error on an offline install | Choose a mirror, a seeded claim or an object store under **Weights**                                                            |
 | Boot fails naming a FlashInfer wheel                         | Install that wheel from the kernel archive, or use the stock vLLM image. See [GPU kernels](/deployment/air-gapped/#gpu-kernels) |
-| Host deletion refused                                        | Point its managed vLLMs at another host first                                                                                   |
+| Host deletion refused                                        | Point its managed servers at another host first                                                                                 |
 
 ## Access
 

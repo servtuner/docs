@@ -5,20 +5,20 @@ description: Search vLLM flags for one model, GPU setup, workload and set of SLO
 
 import TuningLoopDiagram from '../../../components/TuningLoopDiagram.astro';
 
-A session deploys configurations of a managed vLLM, benchmarks them and proposes the next. It ends with a recommended `vllm serve` command.
+A session deploys configurations of a managed server, benchmarks them and proposes the next. It ends with a recommended `vllm serve` command.
 
 <TuningLoopDiagram />
 
 ## Prerequisites
 
-- A [managed vLLM](/guides/managed-vllm/) whose base flags do not set the knobs you tune.
+- A [managed server](/guides/managed-servers/) whose base flags do not set the knobs you tune.
 - A [workload preset](/guides/workload-presets/) and SLOs.
 - No other active session. Only one runs at a time.
 
 ## Steps
 
 1. Open **Tuning** and start a session.
-2. Choose the managed vLLM and preset. Review the SLOs it fills in.
+2. Choose the managed server and preset. Review the SLOs it fills in.
 3. Under **Start from**, pick one of the starting spaces that fit the target, such as `single-gpu` or `two-gpu-tensor-parallel`, and edit it. Tuned knobs show as chips; the YAML holds the rest.
 4. Set **Fixed knobs**, set on every configuration and never tuned.
 5. Optionally, under **Reuse earlier sessions**, pick sessions whose boots and runs this one should build on.

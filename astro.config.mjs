@@ -8,6 +8,8 @@ export default defineConfig({
   site: SITE,
   base: BASE,
   trailingSlash: 'always',
+  // The managed servers guide was the managed vLLM guide; keep old links working.
+  redirects: { '/guides/managed-vllm/': '/guides/managed-servers/' },
   integrations: [
     starlight({
       title: 'servtuner',
@@ -84,7 +86,7 @@ export default defineConfig({
               label: 'Compare and size',
               items: ['guides/experiments', 'guides/sizing', 'guides/costs', 'guides/follow-ups', 'guides/planner'],
             },
-            { label: 'Tune vLLM', items: ['guides/managed-vllm', 'guides/tuning-sessions'] },
+            { label: 'Tune servers', items: ['guides/managed-servers', 'guides/tuning-sessions'] },
             {
               label: 'Concepts',
               items: [

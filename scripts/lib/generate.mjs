@@ -105,7 +105,7 @@ const RESOURCES = [
   [
     'managed-targets',
     'Managed targets API',
-    'Store, deploy, probe and tear down managed vLLM targets.',
+    'Store, deploy, probe and tear down managed server targets.',
     /^\/managed-targets/,
   ],
   [

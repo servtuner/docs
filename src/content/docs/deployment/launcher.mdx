@@ -102,7 +102,7 @@ The managed target then uses port 9123 for the launcher and 8080 for vLLM. Allow
 | `DELETE /server`              | Stops it and frees the GPU                                                                                        |
 | `GET /server/log`             | The tail of its log, for the target's log panel                                                                   |
 | `GET /server/version?server=` | The installed vLLM's (or SGLang's) version                                                                        |
-| `GET /machine`                | The host's GPUs, CPU and memory, for its [host record](/guides/managed-vllm/#hosts)                               |
+| `GET /machine`                | The host's GPUs, CPU and memory, for its [host record](/guides/managed-servers/#hosts)                            |
 
 These replace servtuner 0.1's `/vllm` routes; a launcher and an API of different versions do not talk to each other.
 
@@ -121,4 +121,4 @@ Then use **Check launcher** on the managed target.
 
 ## Next steps
 
-Create a [host managed target](/guides/managed-vllm/).
+Create a [host managed target](/guides/managed-servers/).

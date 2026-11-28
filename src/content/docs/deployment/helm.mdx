@@ -42,8 +42,8 @@ No secret goes in a values file, the helmfile or the release. Values name a Kube
 | --------------------------------------------------------- | ----------------------------------- | ------------------------------ | --------------------------------------------- |
 | A registry pull secret (`kubernetes.io/dockerconfigjson`) | Every namespace the releases run in | `.dockerconfigjson`            | Your registry needs a login to pull           |
 | TLS certificates (`kubernetes.io/tls`)                    | servtuner's namespace               | `tls.crt`, `tls.key`, `ca.crt` | `tls.source: secret` instead of cert-manager  |
-| Object store keys for model weights                       | The managed vLLM's namespace        | Your names                     | Weights streamed from S3 without pod identity |
-| A Hugging Face token                                      | The managed vLLM's namespace        | `token`                        | Gated models from Hugging Face or a mirror    |
+| Object store keys for model weights                       | The managed server's namespace      | Your names                     | Weights streamed from S3 without pod identity |
+| A Hugging Face token                                      | The managed server's namespace      | `token`                        | Gated models from Hugging Face or a mirror    |
 
 The chart generates the first-admin setup token itself. See [authentication](/deployment/authentication/).
 
