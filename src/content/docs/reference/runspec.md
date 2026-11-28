@@ -8,7 +8,7 @@ editUrl: false
 
 One benchmark run: what to test, how to load it and what to record.
 
-Schema file: `schema/json/runspec.schema.json`. Generated from servtuner commit `9fbc13619183`.
+Schema file: `schema/json/runspec.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
 
 ## Top level
 
@@ -264,7 +264,7 @@ Inputs to the resource and config recommendations.
 
 ### targetType
 
-Type: `"vllm"`, `"litellm"`, `"bifrost"`, `"openai-compatible"`
+Type: `"vllm"`, `"litellm"`, `"bifrost"`, `"openai-compatible"`, `"sglang"`
 
 ### engineType
 

@@ -8,7 +8,7 @@ editUrl: false
 
 The --infeasible file of servtuner propose: the boot probes made so far, each a deployment with no load. An infeasible result rules out every configuration whose knobs contain its knobs. A feasible result must name every feasibility knob of the search space; its c\_kv, below the space's min\_concurrency, drops the configuration. The probe of a combination is the base knobs plus the feasibility knobs' values.
 
-Schema file: `schema/json/boot-results.schema.json`. Generated from servtuner commit `9fbc13619183`.
+Schema file: `schema/json/boot-results.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
 
 ## Top level
 
@@ -30,7 +30,7 @@ Type: `"feasible"`, `"infeasible"`
 | `outcome`        | [tuningBootOutcome](/reference/schemas/boot-results/#tuningbootoutcome) | Yes      |                                                                                                                                                                          |
 | `reason`         | `string`                                                                | No       | Why it did not boot: the last log lines or the exit reason.                                                                                                              |
 | `c_kv`           | `number`                                                                | No       | The concurrency the KV cache can hold, from num\_gpu\_blocks in vllm:cache\_config\_info; for a feasible boot. ≥ 0                                                       |
-| `num_gpu_blocks` | `integer`                                                               | No       | ≥ 0                                                                                                                                                                      |
+| `num_gpu_blocks` | `integer`                                                               | No       | The KV cache's size in vLLM blocks, or SGLang's KV pool in pages (max\_total\_num\_tokens / page\_size): boots of equal size are one configuration. ≥ 0                  |
 | `kv_sizing`      | [tuningKvSizing](/reference/schemas/boot-results/#tuningkvsizing)       | No       |                                                                                                                                                                          |
 | `vllm_version`   | `string`                                                                | No       | vLLM's version as its /version reported it, for a feasible boot. A tuning session reusing this boot on a host checks it against the version the host's launcher reports. |
 

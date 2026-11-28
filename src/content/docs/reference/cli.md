@@ -8,7 +8,7 @@ editUrl: false
 
 `servtuner` is one Go binary. It runs as a Kubernetes Job or as a local process with the same command line.
 
-Generated from servtuner commit `9fbc13619183`.
+Generated from servtuner commit `05e04a2ec03f`.
 
 ## Exit codes
 
@@ -38,10 +38,10 @@ Flags:
 
 ## servtuner boot-probe
 
-Read a booted vLLM's KV capacity and print a boot result.
+Read a booted vLLM's or SGLang's KV capacity and print a boot result.
 
 ```text wrap
-Reads vllm:cache_config_info from the target's /metrics through the TLS and credential code a run uses, and prints a tuningBootResult (boot-results.schema.json) with num_gpu_blocks and c_kv = num_gpu_blocks x block_size / tokens_per_request. The tuning loop feeds it to servtuner propose . Exits 1 when the target cannot be read or serves no cache config, 2 for an invalid request.
+Reads the KV capacity through the TLS and credential code a run uses, and prints a tuningBootResult (boot-results.schema.json): for vLLM, vllm:cache_config_info from /metrics, with c_kv = num_gpu_blocks x block_size / tokens_per_request; for SGLang, max_total_num_tokens from /server_info, with c_kv = max_total_num_tokens / tokens_per_request and the pool in pages as num_gpu_blocks. The tuning loop feeds it to servtuner propose . Exits 1 when the target cannot be read or serves no cache config, 2 for an invalid request.
 
 Usage:
   servtuner boot-probe --input <boot-probe-request.json> [flags]
@@ -126,16 +126,17 @@ Flags:
 
 ## servtuner knobs
 
-Print every vLLM flag as a knob, with vLLM's own description and limits, as JSON.
+Print every flag of a model server as a knob, with the server's own description and limits, as JSON.
 
 ```text wrap
-Prints the knob catalog embedded in this binary as one KnobCatalog document: every vllm serve flag with its label, kind, default, choices and limits, read from vLLM's source at the pinned version, marking the knobs servtuner captures and tunes. The api serves it at GET /knobs, so the catalog has one source.
+Prints a knob catalog embedded in this binary as one KnobCatalog document: every flag of vllm serve (the default) or of SGLang's server (--server sglang) that is a knob, with its label, kind, default, choices and limits, read from the server's source at the pinned version, marking the knobs servtuner captures and tunes. The api serves it at GET /knobs[?server=sglang], so each catalog has one source.
 
 Usage:
-  servtuner knobs [flags]
+  servtuner knobs [--server vllm|sglang] [flags]
 
 Flags:
-  -h, --help   help for knobs
+  -h, --help            help for knobs
+      --server string   the model server: vllm or sglang (default "vllm")
 ```
 
 ## servtuner launcher
@@ -149,12 +150,13 @@ Usage:
   servtuner launcher [--config FILE] [--listen ADDR --token-file FILE --tls true|false [--client-auth required|optional|none]] [flags]
 
 Flags:
-      --api-key-file string         file holding vLLM's --api-key value, given to vLLM as VLLM_API_KEY (api_key_file)
+      --api-key-file string         file holding the server's API key: given to vLLM as VLLM_API_KEY, to SGLang in a --config file (api_key_file)
       --client-auth string          client certificates with --tls true: required, optional or none (client_auth)
       --config string               YAML config file (default: $SERVTUNER_LAUNCHER_CONFIG, $XDG_CONFIG_HOME/servtuner/launcher.yaml, /etc/servtuner/launcher.yaml)
   -h, --help                        help for launcher
       --listen string               address to serve the launcher API on (listen) (default ":9123")
-      --log-dir string              directory for vllm.log (log_dir) (default "servtuner-launcher")
+      --log-dir string              directory for server.log (log_dir) (default "servtuner-launcher")
+      --sglang string               the Python of SGLang's virtualenv; empty runs no SGLang (sglang)
       --tls string                  serve over TLS: true or false; required (tls)
       --tls-cert-file string        server certificate, with --tls true (tls_cert_file)
       --tls-client-ca-file string   CA that signs client certificates, with --client-auth required or optional (tls_client_ca_file)
@@ -243,6 +245,22 @@ Flags:
       --tls-ca-file string              extra CA bundle the api's certificate is verified against, added to the system pool (with --api-tls true)
       --tls-cert-file string            client certificate to present to the api (with --api-tls true)
       --tls-key-file string             client key for --tls-cert-file
+```
+
+## servtuner server-args
+
+Print a model server's container args for a knob set, as JSON.
+
+```text wrap
+Reads a JSON object of knobs (vllm.max_num_seqs: 256, or sglang.mem_fraction_static: 0.8) and prints the server args that set them, as a JSON array: through vLLM's knob table, as vllm-args does, or through SGLang's catalog. The api's deployer uses it for managed targets. Exits 2 listing every knob it cannot spell.
+
+Usage:
+  servtuner server-args --server vllm|sglang --knobs <knobs.json> [flags]
+
+Flags:
+  -h, --help            help for server-args
+      --knobs string    path to a JSON object of knobs
+      --server string   the model server: vllm or sglang (default "vllm")
 ```
 
 ## servtuner spaces

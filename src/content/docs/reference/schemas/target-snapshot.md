@@ -8,7 +8,7 @@ editUrl: false
 
 target/snapshot-pre.json and target/snapshot-post.json: the target workload and each upstream, read-only, before and after the load. The two files share this schema and differ in phase.
 
-Schema file: `schema/json/bundle/target-snapshot.schema.json`. Generated from servtuner commit `9fbc13619183`.
+Schema file: `schema/json/bundle/target-snapshot.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
 
 ## Top level
 
@@ -102,11 +102,11 @@ HorizontalPodAutoscaler of the workload. min\_replicas &lt;= max\_replicas is no
 
 What the workload reports about itself.
 
-| Field          | Type              | Required | Description                                            |
-| -------------- | ----------------- | -------- | ------------------------------------------------------ |
-| `version`      | `string`          | No       | As the workload reports it, for example vLLM /version. |
-| `models`       | array of `string` | No       | Model ids from /v1/models.                             |
-| `cache_config` | map of `string`   | No       | vLLM cache\_config\_info labels.                       |
+| Field          | Type              | Required | Description                                                                                                    |
+| -------------- | ----------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| `version`      | `string`          | No       | As the workload reports it, for example vLLM /version.                                                         |
+| `models`       | array of `string` | No       | Model ids from /v1/models.                                                                                     |
+| `cache_config` | map of `string`   | No       | vLLM cache\_config\_info labels, or SGLang's KV pool from /server\_info (max\_total\_num\_tokens, page\_size). |
 
 ### hardwareProfile
 

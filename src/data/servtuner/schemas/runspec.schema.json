@@ -635,7 +635,7 @@
     },
     "targetType": {
       "type": "string",
-      "enum": ["vllm", "litellm", "bifrost", "openai-compatible"]
+      "enum": ["vllm", "litellm", "bifrost", "openai-compatible", "sglang"]
     },
     "engineType": {
       "type": "string",

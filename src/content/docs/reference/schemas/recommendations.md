@@ -8,7 +8,7 @@ editUrl: false
 
 recommendations.json: what to change, by how much and why. Every value links to a node of the derivation graph, which holds its formula with the inputs substituted. Recomputable from the raw files by servtuner analyze.
 
-Schema file: `schema/json/bundle/recommendations.schema.json`. Generated from servtuner commit `9fbc13619183`.
+Schema file: `schema/json/bundle/recommendations.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
 
 ## Top level
 

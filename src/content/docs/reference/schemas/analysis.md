@@ -8,7 +8,7 @@ editUrl: false
 
 analysis.json: data quality gate, per-stage client aggregates and the capacity model. Recomputable from the raw files by servtuner analyze.
 
-Schema file: `schema/json/bundle/analysis.schema.json`. Generated from servtuner commit `9fbc13619183`.
+Schema file: `schema/json/bundle/analysis.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
 
 ## Top level
 

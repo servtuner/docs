@@ -107,7 +107,7 @@
     "catalogName": {
       "description": "A Prometheus query catalog; extra is the RunSpec's extra_queries.",
       "type": "string",
-      "enum": ["kubernetes", "bifrost", "vllm", "litellm", "dcgm", "extra"]
+      "enum": ["kubernetes", "bifrost", "vllm", "litellm", "sglang", "dcgm", "extra"]
     },
     "sloName": {
       "description": "The SLO keys of the RunSpec's slos block.",
