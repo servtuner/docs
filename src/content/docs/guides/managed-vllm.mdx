@@ -21,7 +21,7 @@ On a GPU host:
 
 ## Steps
 
-1. Open **Managed vLLM** and add a target. Choose **Kubernetes** or **A host with servtuner launcher**.
+1. Open **Managed vLLM** and add a target. Choose **Kubernetes** or **A host with servtuner launcher**, and on Kubernetes the **model server**: vLLM, or [SGLang](#sglang).
 2. Enter a pinned image (Kubernetes) or the host, then the model, resources, [weights](#model-sources) and base flags. servtuner refuses flags it owns, such as the model, host, port and TLS flags.
 3. Select **Deploy** with a set of [knobs](#knobs).
 4. Wait for readiness. The states are `pending`, `ready`, `infeasible` and `failed`.
@@ -90,7 +90,13 @@ Every vLLM flag is a knob, read from vLLM's own source at the pinned version, wi
 
 - **Deploy** and **New session** show knobs as chips. Select one to edit its value within vLLM's limits, or **Add a knob** to pick from the catalog by name or flag.
 - **Base flags** are set on every deployment and never tuned. A knob you tune may not also be a base flag.
-- `servtuner vllm-args` turns a set of knobs into the `vllm serve` arguments servtuner would use.
+- `servtuner server-args --server vllm|sglang` turns a set of knobs into the arguments servtuner would use (`servtuner vllm-args` still does it for vLLM).
+
+## SGLang
+
+A Kubernetes target with `server: sglang` runs `python3 -m sglang.launch_server` from an SGLang image (`lmsysorg/sglang:v0.5.23-runtime` is the one the form suggests). servtuner sets the model path, host, port, download directory and `--enable-metrics`, and with TLS the target's certificate, reloaded on rotation (`--enable-ssl-refresh`); SGLang asks for no client certificate. Its knobs are SGLang's own flags (`servtuner knobs --server sglang`, `GET /knobs?server=sglang`); secrets and the flags servtuner sets are not knobs. An SGLang target cannot stream weights from an object store.
+
+A boot that fails is read from SGLang's log: an empty KV pool, CUDA graph capture or CUDA running out of memory, or a context length above the model's are infeasible configurations. The boot probe measures the KV pool from `/server_info` (`max_total_num_tokens`). A tuning session moves `max_running_requests` within that pool and `chunked_prefill_size`, following the [SGLang advisor](/guides/targets/sglang/#read-the-advisor); start from the `sglang-single-gpu` space. Host targets run vLLM.
 
 Kubernetes targets also take plain environment variables (`env`, never a secret) and a `/dev/shm` size (`shm_size`) for tensor-parallel workers.
 

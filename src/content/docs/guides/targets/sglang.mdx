@@ -1,0 +1,83 @@
+---
+title: Benchmark SGLang
+description: Configure an SGLang target, collect its metrics and read the SGLang advisor.
+sidebar:
+  label: SGLang
+---
+
+Measure an SGLang server directly and explain its latency with its queue, KV pool, retraction and prefix cache metrics. servtuner reads SGLang v0.5.23's interface.
+
+## Prerequisites
+
+- An SGLang endpoint reachable from bench, started with `--enable-metrics`. Without it, a run has client-side numbers only and is graded degraded.
+- [Prometheus](/deployment/prometheus/) scraping SGLang about every 5 seconds. Its keep rule must admit `sglang:.*` series.
+- For snapshots, its namespace listed in `rbac.bench.targetNamespaces`.
+
+## Configure the target
+
+{/* schema: runspec */}
+
+```yaml title="sglang.yaml"
+apiVersion: servtuner.dev/v2
+kind: RunSpec
+name: sglang-baseline
+experiment: sglang-running-cap
+knobs:
+  sglang.max_running_requests: 128
+target:
+  type: sglang
+  endpoint: http://sglang.inference.svc:30000/v1
+  model: example/model
+  auth:
+    secretRef: { name: sglang-key, key: token }
+  workload:
+    namespace: inference
+    selector: { app: sglang }
+  tls:
+    enabled: false
+engine: { type: loadgen }
+workload:
+  preset: chat-short@1
+  streaming: true
+load:
+  pacing: poisson
+  warmup: 30s
+  stages:
+    - { rate: 4, duration: 180s }
+    - { rate: 8, duration: 180s }
+    - { rate: 16, duration: 180s }
+slos: { ttft_p95: 500ms, itl_p95: 50ms }
+prometheus:
+  url: http://prometheus.monitoring.svc:9090
+  tls:
+    enabled: false
+```
+
+Declare as knobs only the flags the server was started with. For an SGLang outside Kubernetes, use `target.metrics` instead of `target.workload`; see [off-cluster targets](/deployment/prometheus/#off-cluster-targets). Such a run records no hardware, so it cannot be [compared with vLLM](/guides/experiments/#vllm-or-sglang).
+
+SGLang serves TLS (`--ssl-certfile`, `--ssl-keyfile`) but never asks for a client certificate. A RunSpec may still name one in `tls.clientCert`; SGLang ignores it.
+
+## What servtuner captures
+
+- From `/server_info` (the deprecated `/get_server_info` on older servers): the version, every setting as SGLang resolved it, the exact launch command, and the KV pool size (`max_total_num_tokens`). It is kept redacted as `target/config/<phase>-sglang-server-info.json`; an `--api-key` value never reaches the bundle.
+- Knobs: `sglang.<flag>`, from `/server_info` first, so a `--config` file cannot hide them; the container args are the fallback, from either `python3 -m sglang.launch_server` or `sglang serve`.
+- With `--api-key`, `/server_info` needs the key. servtuner sends `target.auth`, and a refusal is recorded without failing the run. `/health` and `/metrics` stay open.
+
+## Read the advisor
+
+| Rule | What it looks for                                                                                           |
+| ---- | ----------------------------------------------------------------------------------------------------------- |
+| S1   | The KV pool at least 95% full while requests wait: raise `--mem-fraction-static` or lower the running cap   |
+| S2   | Running requests retracted to the queue at the operating point                                              |
+| S3   | Requests waiting while running sits at `--max-running-requests` and the KV pool has room                    |
+| S4   | A shared-prefix workload with low prefix reuse under a policy other than `lpm`, or with the radix cache off |
+
+The Server tab charts running and waiting requests, KV pool usage, tokens per second, prefix cache hits and retractions. Scheduler series are read once per data-parallel group, so tensor-parallel ranks that report the same batch are not counted twice.
+
+## Verify
+
+On the run's **Config** tab, check that declared knobs match captured knobs. A `mismatch` excludes the run from comparisons. `unverified` means SGLang did not report the flag: it was not on the command line, so SGLang chose the value itself. Start the server with the flag, or remove the knob from the RunSpec.
+
+## Next steps
+
+Compare it with vLLM on the same model and GPU in an [experiment](/guides/experiments/#vllm-or-sglang), or let servtuner search its flags with a [tuning session](/guides/tuning-sessions/) on a [managed target](/guides/managed-vllm/).
