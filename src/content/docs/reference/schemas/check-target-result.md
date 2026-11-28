@@ -8,7 +8,7 @@ editUrl: false
 
 servtuner check-target's output: one entry per check, in order. A check that depends on a failed one is skipped. status is failed when any check failed, warning when any warned, else ok. Never carries a secret value.
 
-Schema file: `schema/json/check-target-result.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/check-target-result.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 

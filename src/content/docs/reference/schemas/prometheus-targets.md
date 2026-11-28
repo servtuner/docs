@@ -8,7 +8,7 @@ editUrl: false
 
 prometheus/targets.json: the effective scrape interval and timeout of every scraped job, from /api/v1/targets.
 
-Schema file: `schema/json/bundle/prometheus-targets.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/bundle/prometheus-targets.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 

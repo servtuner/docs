@@ -79,7 +79,7 @@
   },
   {
     "name": "`SERVTUNER_IMAGE_REGISTRY`",
-    "meaning": "`global.imageRegistry` without a trailing slash, or empty; offered as the registry of managed vLLM images",
+    "meaning": "`global.imageRegistry` without a trailing slash, or empty; offered as the registry of managed server images",
     "values": "host[:port][/path]",
     "readBy": "api"
   },
@@ -133,7 +133,7 @@
   },
   {
     "name": "`SERVTUNER_TUNING_MONITOR`",
-    "meaning": "How Prometheus finds a managed vLLM: `podmonitor` (Prometheus Operator) or `scrape-annotations` (community chart), from `tuning.monitor`",
+    "meaning": "How Prometheus finds a managed server: `podmonitor` (Prometheus Operator) or `scrape-annotations` (community chart), from `tuning.monitor`",
     "values": "`podmonitor` | `scrape-annotations`",
     "readBy": "api"
   },
@@ -211,7 +211,7 @@
   },
   {
     "name": "`SERVTUNER_TUNING_NAMESPACES`",
-    "meaning": "Namespaces where managed vLLM targets may be stored and deployed, from `rbac.tuning.namespaces`; unset grants none",
+    "meaning": "Namespaces where managed server targets may be stored and deployed, from `rbac.tuning.namespaces`; unset grants none",
     "values": "comma-separated names",
     "readBy": "api"
   },

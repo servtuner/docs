@@ -8,7 +8,7 @@ editUrl: false
 
 `servtuner` is one Go binary. It runs as a Kubernetes Job or as a local process with the same command line.
 
-Generated from servtuner commit `05e04a2ec03f`.
+Generated from servtuner commit `d9b231432260`.
 
 ## Exit codes
 

@@ -8,24 +8,23 @@ editUrl: false
 
 comparison.json, written by servtuner compare: the experiment comparison. Runs with the same knobs are repeats of one configuration; each configuration's objectives carry a confidence interval across repeats (throughput objectives) or a bootstrap interval over the pooled per-request records (latency objectives). A configuration wins only when its interval does not overlap the runner-up's, or, with single samples, when it leads by more than twice the noise floor. Recomputable from the bundles.
 
-Schema file: `schema/json/comparison.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/comparison.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 
-| Field                      | Type                                                                           | Required | Description                                                                                                                                                        |
-| -------------------------- | ------------------------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `analyzer_version`         | `string`                                                                       | Yes      |                                                                                                                                                                    |
-| `experiment`               | `string`                                                                       | No       | The runs' experiment name, when they all share one.                                                                                                                |
-| `objective`                | [objectiveName](/reference/schemas/comparison/#objectivename)                  | Yes      | The primary objective: the one the recommendation and the Pareto set use.                                                                                          |
-| `varied_knobs`             | array of `string`                                                              | Yes      | Knobs whose values differ between configurations, sorted.                                                                                                          |
-| `is_factorial`             | `boolean`                                                                      | Yes      | True when every combination of the varied knobs' values was run. With two or more varied knobs and no factorial design, effects are not claimed to be independent. |
-| `reference_stage_index`    | `integer`                                                                      | No       | The highest stage valid in every compared run; the latency side of the Pareto set is read there. Absent when no stage is valid in all of them. ≥ 0                 |
-| `comparability`            | [comparability](/reference/schemas/comparison/#comparability)                  | Yes      |                                                                                                                                                                    |
-| `excluded_runs`            | array of [excludedRun](/reference/schemas/comparison/#excludedrun)             | Yes      | Runs left out of the comparison, and why.                                                                                                                          |
-| `configurations`           | array of [knobConfiguration](/reference/schemas/comparison/#knobconfiguration) | Yes      |                                                                                                                                                                    |
-| `rankings`                 | array of [objectiveRanking](/reference/schemas/comparison/#objectiveranking)   | Yes      | One ranking per objective that could be computed for every configuration.                                                                                          |
-| `pareto_configuration_ids` | array of `string`                                                              | No       | Configurations not dominated on (primary objective, p95 TTFT at the reference stage). Absent when either is unavailable for some configuration.                    |
-| `recommendation`           | [knobRecommendation](/reference/schemas/comparison/#knobrecommendation)        | No       |                                                                                                                                                                    |
+| Field                      | Type                                                                           | Required | Description                                                                                                                                        |
+| -------------------------- | ------------------------------------------------------------------------------ | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `analyzer_version`         | `string`                                                                       | Yes      |                                                                                                                                                    |
+| `experiment`               | `string`                                                                       | No       | The runs' experiment name, when they all share one.                                                                                                |
+| `objective`                | [objectiveName](/reference/schemas/comparison/#objectivename)                  | Yes      | The primary objective: the one the recommendation and the Pareto set use.                                                                          |
+| `varied_knobs`             | array of `string`                                                              | Yes      | Knobs whose values differ between configurations, sorted.                                                                                          |
+| `reference_stage_index`    | `integer`                                                                      | No       | The highest stage valid in every compared run; the latency side of the Pareto set is read there. Absent when no stage is valid in all of them. ≥ 0 |
+| `comparability`            | [comparability](/reference/schemas/comparison/#comparability)                  | Yes      |                                                                                                                                                    |
+| `excluded_runs`            | array of [excludedRun](/reference/schemas/comparison/#excludedrun)             | Yes      | Runs left out of the comparison, and why.                                                                                                          |
+| `configurations`           | array of [knobConfiguration](/reference/schemas/comparison/#knobconfiguration) | Yes      |                                                                                                                                                    |
+| `rankings`                 | array of [objectiveRanking](/reference/schemas/comparison/#objectiveranking)   | Yes      | One ranking per objective that could be computed for every configuration.                                                                          |
+| `pareto_configuration_ids` | array of `string`                                                              | No       | Configurations not dominated on (primary objective, p95 TTFT at the reference stage). Absent when either is unavailable for some configuration.    |
+| `recommendation`           | [knobRecommendation](/reference/schemas/comparison/#knobrecommendation)        | No       |                                                                                                                                                    |
 
 ## Definitions
 
@@ -47,7 +46,7 @@ Type: `"high"`, `"medium"`, `"low"`
 
 ### comparisonIssueCode
 
-Type: `"workload_differs"`, `"target_type_differs"`, `"hardware_differs"`, `"arrival_differs"`, `"ladder_differs"`, `"slos_differ"`, `"experiment_differs"`, `"too_few_configurations"`, `"not_factorial"`, `"coverage_incomplete"`
+Type: `"workload_differs"`, `"target_type_differs"`, `"hardware_differs"`, `"arrival_differs"`, `"ladder_differs"`, `"slos_differ"`, `"experiment_differs"`, `"too_few_configurations"`, `"coverage_incomplete"`
 
 ### comparisonIssue
 

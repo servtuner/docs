@@ -8,7 +8,7 @@ editUrl: false
 
 One row of requests.parquet. Optional fields are absent (null in Parquet) when not measured.
 
-Schema file: `schema/json/bundle/request-record.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/bundle/request-record.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 

@@ -8,7 +8,7 @@ editUrl: false
 
 One benchmark run: what to test, how to load it and what to record.
 
-Schema file: `schema/json/runspec.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/runspec.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 
@@ -350,7 +350,7 @@ Prices for local and on-prem hardware. A node type is priced per hour with its a
 
 ### declaredHardware
 
-The machine a target outside Kubernetes runs on, as its host record says: there are no nodes to read it from. The analysis scopes and prices the run by it when the snapshot has no hardware profile for the target; a captured profile always wins.
+The machine a target outside Kubernetes runs on, as its host record (or the RunSpec's author) says: there are no nodes to read it from. The analysis scopes and prices the run by it, and a vLLM-against-SGLang comparison matches its GPU model and count, when the snapshot has no hardware profile for the target; a captured profile always wins.
 
 | Field              | Type      | Required | Description                                      |
 | ------------------ | --------- | -------- | ------------------------------------------------ |

@@ -8,7 +8,7 @@ editUrl: false
 
 Every serve flag of one model server (vLLM or SGLang) that is a knob (one value, not one servtuner sets itself), with its description, type, default and limits taken from the server's own source at the pinned version. servtuner knobs \[--server sglang\] prints it from the catalogs it embeds; the api serves it at GET /knobs\[?server=sglang\].
 
-Schema file: `schema/json/knob-catalog.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/knob-catalog.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 

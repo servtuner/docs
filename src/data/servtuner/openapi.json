@@ -260,6 +260,17 @@
           "capacity": {
             "$ref": "#/components/schemas/CapacityModel"
           },
+          "hardware_profile": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HardwareProfile"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The hardware the results are scoped to: the target's profile from the snapshot, or, for a target outside Kubernetes, one built from the RunSpec's target.hardware (hardware_source). Absent when neither is known."
+          },
           "hardware_profile_id": {
             "anyOf": [
               {
@@ -270,8 +281,19 @@
                 "type": "null"
               }
             ],
-            "description": "The hardware profile the results are scoped to; matches target-snapshot hardware_profile_id.",
+            "description": "The hardware profile the results are scoped to: hardware_profile's id.",
             "title": "Hardware Profile Id"
+          },
+          "hardware_source": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/HardwareSource"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Where hardware_profile came from: captured from the Kubernetes nodes the target runs on, or declared in the RunSpec."
           },
           "quality": {
             "$ref": "#/components/schemas/RunQuality"
@@ -1190,11 +1212,6 @@
             "description": "The runs' experiment name, when they all share one.",
             "title": "Experiment"
           },
-          "is_factorial": {
-            "description": "True when every combination of the varied knobs' values was run. With two or more varied knobs and no factorial design, effects are not claimed to be independent.",
-            "title": "Is Factorial",
-            "type": "boolean"
-          },
           "objective": {
             "$ref": "#/components/schemas/ObjectiveName",
             "description": "The primary objective: the one the recommendation and the Pareto set use."
@@ -1258,7 +1275,6 @@
           "analyzer_version",
           "objective",
           "varied_knobs",
-          "is_factorial",
           "comparability",
           "excluded_runs",
           "configurations",
@@ -1298,7 +1314,6 @@
           "slos_differ",
           "experiment_differs",
           "too_few_configurations",
-          "not_factorial",
           "coverage_incomplete"
         ],
         "title": "ComparisonIssueCode",
@@ -3287,6 +3302,11 @@
         "required": ["accelerator", "cpu_model"],
         "title": "HardwareProfile2",
         "type": "object"
+      },
+      "HardwareSource": {
+        "enum": ["captured", "declared"],
+        "title": "HardwareSource",
+        "type": "string"
       },
       "Headroom": {
         "additionalProperties": false,
