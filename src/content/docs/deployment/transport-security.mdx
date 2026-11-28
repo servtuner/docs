@@ -83,9 +83,9 @@ Each pod combines system CAs with the private CA and sets `SSL_CERT_FILE`. Do no
 
 Turn TLS off on a connection only when something else encrypts it, such as a service mesh or a CNI with encryption, or for local testing. servtuner cannot check that claim. Every run records each connection's settings, so you can see what it relied on.
 
-## Managed vLLM
+## Managed Servers
 
-Managed vLLM serves plain HTTP by default. `{ enabled: true }` gives each target its own server certificate. Client certificates are not offered yet.
+Managed Servers serves plain HTTP by default. `{ enabled: true }` gives each target its own server certificate. Client certificates are not offered yet.
 
 ## Upgrade from servtuner 0.1
 

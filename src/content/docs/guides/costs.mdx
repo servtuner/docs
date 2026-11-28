@@ -19,7 +19,7 @@ There are two kinds of cost, kept apart:
 
 ## Set prices in the price book
 
-Open **Managed vLLM → Prices**. New runs and tuning sessions copy the book into their spec as `analysis.infra_pricing` and `analysis.token_pricing`.
+Open **Managed Servers → Prices**. New runs and tuning sessions copy the book into their spec as `analysis.infra_pricing` and `analysis.token_pricing`.
 
 ### Infrastructure
 
@@ -33,7 +33,7 @@ Choose a **Price source**:
 
 A **discount multiplier** applies to every price, for Spot, reserved instances or Savings Plans. With AWS prices, bench needs `pricing:GetProducts`. See [storage](/deployment/storage/).
 
-A vLLM on a host is priced by its [host](/guides/managed-vllm/#hosts) instead: per hour, or owned hardware spread over its life plus electricity.
+A vLLM on a host is priced by its [host](/guides/managed-servers/#hosts) instead: per hour, or owned hardware spread over its life plus electricity.
 
 ### Token prices
 

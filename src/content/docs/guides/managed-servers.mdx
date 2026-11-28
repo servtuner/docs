@@ -1,9 +1,9 @@
 ---
-title: Manage a vLLM target
-description: Let servtuner deploy a vLLM it owns, on Kubernetes or on a GPU host, and choose where its weights come from.
+title: Manage a server
+description: Let servtuner deploy a vLLM or SGLang server it owns, on Kubernetes or on a GPU host, and choose where its weights come from.
 ---
 
-A managed vLLM is the only workload servtuner deploys and reconfigures. Use **Targets** for a server you run yourself.
+A managed server is the only workload servtuner deploys and reconfigures. Use **Targets** for a server you run yourself.
 
 ## Prerequisites
 
@@ -21,7 +21,7 @@ On a GPU host:
 
 ## Steps
 
-1. Open **Managed vLLM** and add a target. Choose **Kubernetes** or **A host with servtuner launcher**, and on Kubernetes the **model server**: vLLM, or [SGLang](#sglang).
+1. Open **Managed Servers** and add a target. Choose **Kubernetes** or **A host with servtuner launcher**, and on Kubernetes the **model server**: vLLM, or [SGLang](#sglang).
 2. Enter a pinned image (Kubernetes) or the host, then the model, resources, [weights](#model-sources) and base flags. servtuner refuses flags it owns, such as the model, host, port and TLS flags.
 3. Select **Deploy** with a set of [knobs](#knobs).
 4. Wait for readiness. The states are `pending`, `ready`, `infeasible` and `failed`.
@@ -102,12 +102,12 @@ Kubernetes targets also take plain environment variables (`env`, never a secret)
 
 ## Hosts
 
-A **host** records a GPU machine outside Kubernetes: its hardware and its price. Hosts are listed under **Managed vLLM**, each with its own page.
+A **host** records a GPU machine outside Kubernetes: its hardware and its price. Hosts are listed under **Managed Servers**, each with its own page.
 
 - **Read from the launcher** fills in the hardware (GPUs, CPU, memory) from a host target's launcher.
 - The price is **Per hour**, or **Owned hardware**: the purchase price spread over its life in hours, plus power in watts times your electricity price.
 - A host target names its host. Its runs then know their GPUs, so they can rank by per-GPU objectives, and are priced by the host. See [costs](/guides/costs/).
-- A host cannot be deleted while a managed vLLM runs on it. Past runs keep what they recorded.
+- A host cannot be deleted while a managed server runs on it. Past runs keep what they recorded.
 
 ## Ownership and safety
 

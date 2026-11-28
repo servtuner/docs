@@ -127,12 +127,12 @@ With `offline` (the chart value, `SERVTUNER_OFFLINE`, or `servtuner run --offlin
 
 - never fetches the public token-price datasheet: runs use the one you [upload to the price book](/guides/costs/#token-prices), and say so when there is none;
 - refuses AWS Price List prices, in the API and the UI, with the reason;
-- sets `FLASHINFER_NO_DOWNLOAD=1` for every managed vLLM, so a missing GPU kernel fails the boot at once instead of hanging on a download;
+- sets `FLASHINFER_NO_DOWNLOAD=1` for every managed server, so a missing GPU kernel fails the boot at once instead of hanging on a download;
 - records `offline` in each run's `environment.json`.
 
 ## Model weights
 
-A managed vLLM downloads its model from Hugging Face by default. Without internet access, choose its **Weights** source: an internal mirror, a claim you seed once, or an object store. See [model sources](/guides/managed-vllm/#model-sources).
+A managed server downloads its model from Hugging Face by default. Without internet access, choose its **Weights** source: an internal mirror, a claim you seed once, or an object store. See [model sources](/guides/managed-servers/#model-sources).
 
 To seed a claim from a model archive, on site:
 
@@ -142,7 +142,7 @@ hauler store extract hauler/servtuner-model-qwen2.5-0.5b.tar.gz:latest
 kubectl -n <namespace> apply -f my-claim.yaml   # a PVC big enough for the model, such as qwen-weights
 ```
 
-Then copy the archive into the claim with a temporary pod that mounts it, and unpack its `model/hub/` folder to `/models/hf` on the claim. That is where the managed vLLM's `--download-dir` points. `INSTALL.md` in the release has the exact commands.
+Then copy the archive into the claim with a temporary pod that mounts it, and unpack its `model/hub/` folder to `/models/hf` on the claim. That is where the managed server's `--download-dir` points. `INSTALL.md` in the release has the exact commands.
 
 To build a model archive on a connected machine, download the model into a Hugging Face cache, then run `just model-archive <name> <cache dir> <licence file>`. It refuses gated models and licences that do not clearly allow redistribution.
 
@@ -152,7 +152,7 @@ vLLM's attention and sampling kernels come from FlashInfer, which downloads any 
 
 - **The stock vLLM image**, from the optional vLLM archive, already carries every kernel. Nothing to do.
 - **A host target or your own image:** build the release with `--with-flashinfer`, and install the wheels into vLLM's Python environment with `pip install --no-index --no-deps`. The FlashInfer version must match your vLLM's (0.7.3 for vLLM v0.34.0); a mismatched kernel wheel is ignored.
-- **A mirror:** copy FlashInfer's kernel repository inside your network and set `FLASHINFER_CUBINS_REPOSITORY` in the managed vLLM's environment.
+- **A mirror:** copy FlashInfer's kernel repository inside your network and set `FLASHINFER_CUBINS_REPOSITORY` in the managed server's environment.
 
 When a kernel is missing, the target's page says which wheel to install.
 

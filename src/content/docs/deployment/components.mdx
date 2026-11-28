@@ -114,7 +114,7 @@ kubectl -n envoy-gateway-system get svc -l gateway.envoyproxy.io/owning-gateway-
 
 ## kube-prometheus-stack
 
-**What servtuner uses it for.** Server-side metrics explain what the client measured: queueing, KV cache, router overhead and resource use. servtuner queries Prometheus for each run's window. Managed vLLM targets are found by `PodMonitor`s, which need the Prometheus Operator.
+**What servtuner uses it for.** Server-side metrics explain what the client measured: queueing, KV cache, router overhead and resource use. servtuner queries Prometheus for each run's window. Managed Servers targets are found by `PodMonitor`s, which need the Prometheus Operator.
 
 **What the helmfile installs.** The upstream `prometheus-community/kube-prometheus-stack` chart, with the values in `deploy/helmfile/values/kube-prometheus-stack.yaml.gotmpl`. servtuner's `prometheus.url` points at it.
 

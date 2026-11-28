@@ -17,15 +17,15 @@
       "text": "applied it"
     },
     "hosts": {
-      "page": "guides/managed-vllm",
+      "page": "guides/managed-servers",
       "text": "Read from the launcher"
     },
     "knobs": {
-      "page": "guides/managed-vllm",
+      "page": "guides/managed-servers",
       "text": "Add a knob"
     },
     "managed-targets": {
-      "page": "guides/managed-vllm",
+      "page": "guides/managed-servers",
       "text": "Scale to zero"
     },
     "new-run": {
