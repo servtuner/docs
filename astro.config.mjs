@@ -64,6 +64,7 @@ export default defineConfig({
               items: [
                 'guides/targets',
                 'guides/targets/vllm',
+                'guides/targets/sglang',
                 'guides/targets/litellm',
                 'guides/targets/bifrost',
                 'guides/targets/openai-compatible',

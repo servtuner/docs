@@ -26,6 +26,7 @@ Download these from the [release](https://github.com/servtuner/servtuner/release
 | `servtuner-deploy-<version>.tar.gz`               | The deploy bundle on its own                                                                                                  |
 | `SHA256SUMS`, `THIRD_PARTY_NOTICES`, `INSTALL.md` | Checksums of the files above, the licence of every bundled image and chart, and the install guide                             |
 | `servtuner-vllm-<version>.tar.zst`                | Optional, built yourself: the managed vLLM images                                                                             |
+| `servtuner-sglang-<version>.tar.zst`              | Optional, built yourself: the managed SGLang image                                                                            |
 | `servtuner-flashinfer-<…>.tar.zst`                | Optional, built yourself: FlashInfer's GPU kernels, for a host's vLLM or your own image                                       |
 | `servtuner-model-<name>.tar.zst`                  | Optional, built yourself: one model's weights and licence, to [seed a claim](#model-weights)                                  |
 
@@ -35,6 +36,7 @@ The optional archives are large and specific to a site, so releases do not publi
 
 ```sh
 just release <version> --with-vllm                       # also the managed vLLM images
+just release <version> --with-sglang                     # also the managed SGLang image
 just release <version> --with-flashinfer --sm sm90a      # also FlashInfer's kernels, for those GPUs only
 just model-archive <name> <cache dir> <licence file>     # one model
 ```

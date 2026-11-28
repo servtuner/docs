@@ -23,6 +23,7 @@ Every key matches a flag of the same name, and a flag on the command line wins. 
 listen: 0.0.0.0:9123
 tls: false # true serves tls_cert_file and tls_key_file, with client_auth: none
 vllm: /opt/vllm/bin/vllm # the executable, when it is not on PATH
+# sglang: /opt/sglang/bin/python # the Python of SGLang's virtualenv, to run SGLang too
 log_dir: /var/lib/servtuner-launcher
 # token_file and api_key_file name files that hold the secrets. Under systemd, leave them unset.
 ```
@@ -94,18 +95,20 @@ The managed target then uses port 9123 for the launcher and 8080 for vLLM. Allow
 
 ## What the API asks of it
 
-| Request             | What it does                                                                        |
-| ------------------- | ----------------------------------------------------------------------------------- |
-| `PUT /vllm`         | Starts vLLM with the target's arguments, replacing a running process                |
-| `GET /vllm`         | Reports whether vLLM is starting, ready or stopped                                  |
-| `DELETE /vllm`      | Stops vLLM and frees the GPU                                                        |
-| `GET /vllm/log`     | The tail of vLLM's log, for the target's log panel                                  |
-| `GET /vllm/version` | The installed vLLM version                                                          |
-| `GET /machine`      | The host's GPUs, CPU and memory, for its [host record](/guides/managed-vllm/#hosts) |
+| Request                       | What it does                                                                                                      |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `PUT /server`                 | Starts the server named in the request (`vllm`, or `sglang`) with the target's arguments, replacing a running one |
+| `GET /server`                 | Reports which server runs and whether it is starting, ready or stopped                                            |
+| `DELETE /server`              | Stops it and frees the GPU                                                                                        |
+| `GET /server/log`             | The tail of its log, for the target's log panel                                                                   |
+| `GET /server/version?server=` | The installed vLLM's (or SGLang's) version                                                                        |
+| `GET /machine`                | The host's GPUs, CPU and memory, for its [host record](/guides/managed-vllm/#hosts)                               |
+
+These replace servtuner 0.1's `/vllm` routes; a launcher and an API of different versions do not talk to each other.
 
 ## Security
 
-Every request needs the bearer token. Give vLLM its own API key through `api_key_file` or the credential, so it is neither sent over the network nor visible in its arguments. Limit the launcher port to the API with a firewall. For HTTPS, use `tls: true` with the launcher's own certificate and `client_auth: none`; the API verifies it and has no skip-verify option. The API presents no client certificate to launchers yet, so `client_auth: required` would refuse it.
+Every request needs the bearer token. Give the server its own API key through `api_key_file` or the credential, so it is neither sent over the network nor visible in its arguments: vLLM gets it as `VLLM_API_KEY`, and SGLang, which reads no key from its environment, in a `--config` file only the launcher's user can read. A request may not pass `--api-key` or `--config` itself. Limit the launcher port to the API with a firewall. For HTTPS, use `tls: true` with the launcher's own certificate and `client_auth: none`; the API verifies it and has no skip-verify option. The API presents no client certificate to launchers yet, so `client_auth: required` would refuse it.
 
 ## Verify
 
