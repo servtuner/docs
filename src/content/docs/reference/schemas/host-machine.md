@@ -8,7 +8,7 @@ editUrl: false
 
 What servtuner launcher reports about the machine it runs on (GET /machine): its GPUs from nvidia-smi, its CPU from /proc/cpuinfo and its memory from /proc/meminfo. A part it cannot read is left out and named in problems, never guessed.
 
-Schema file: `schema/json/host-machine.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/host-machine.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 

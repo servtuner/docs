@@ -8,7 +8,7 @@ editUrl: false
 
 The input of servtuner boot-probe: a vLLM that booted with these knobs and no load. bench reads vllm:cache\_config\_info from its /metrics through the target's own hop and prints a tuningBootResult (boot-results.schema.json) with num\_gpu\_blocks and c\_kv = num\_gpu\_blocks x block\_size / tokens\_per\_request.
 
-Schema file: `schema/json/boot-probe-request.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/boot-probe-request.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 

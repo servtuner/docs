@@ -8,7 +8,7 @@ editUrl: false
 
 A named starting search space for a tuning session. Files live in schema/search-spaces/&lt;name&gt;.v&lt;version&gt;.yaml and are embedded in bench (servtuner spaces); New session offers the ones that fit the managed target, and the space stays editable. A change is a new version.
 
-Schema file: `schema/json/search-space-template.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/search-space-template.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 

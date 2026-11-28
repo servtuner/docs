@@ -8,7 +8,7 @@ editUrl: false
 
 charts/histograms.json, written by servtuner analyze: TTFT, E2E and ITL distributions per stage over fixed logarithmic buckets, warmup excluded. Each counts array has one more entry than edges\_seconds: counts\[0\] is below edges\_seconds\[0\], counts\[i\] is in \[edges\_seconds\[i-1\], edges\_seconds\[i\]), and the last is at or above the last edge.
 
-Schema file: `schema/json/bundle/chart-histograms.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/bundle/chart-histograms.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 

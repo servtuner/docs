@@ -8,7 +8,7 @@ editUrl: false
 
 pricing/infra.json: the infrastructure prices a run resolved, so servtuner analyze prices from this copy and never from a live source. The manifest's checksum covers it.
 
-Schema file: `schema/json/bundle/infra-pricing.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/bundle/infra-pricing.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 

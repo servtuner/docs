@@ -8,7 +8,7 @@ editUrl: false
 
 Definitions shared by more than one servtuner schema.
 
-Schema file: `schema/json/common.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/common.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Definitions
 

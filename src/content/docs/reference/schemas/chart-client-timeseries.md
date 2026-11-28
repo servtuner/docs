@@ -8,7 +8,7 @@ editUrl: false
 
 charts/client\_timeseries.json, written by servtuner analyze for the Latency and Throughput tabs: the client's requests bucketed by send time over the stages, with the stage bands. It is chart data, not a statistic: bucket percentiles are nearest-rank over however many requests the bucket has (samples says how many) and carry no interval; the Rule A qualified values with bootstrap intervals are analysis.json's. Warmup requests are left out.
 
-Schema file: `schema/json/bundle/chart-client-timeseries.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/bundle/chart-client-timeseries.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 

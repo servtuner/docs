@@ -8,7 +8,7 @@ editUrl: false
 
 pricing/token.json: where the run's copy of the pricing datasheet (pricing/datasheet.json, stored byte for byte) came from. The datasheet itself is not committed anywhere: its terms are not reviewed.
 
-Schema file: `schema/json/bundle/token-pricing.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/bundle/token-pricing.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 

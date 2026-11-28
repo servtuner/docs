@@ -8,17 +8,19 @@ editUrl: false
 
 analysis.json: data quality gate, per-stage client aggregates and the capacity model. Recomputable from the raw files by servtuner analyze.
 
-Schema file: `schema/json/bundle/analysis.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
+Schema file: `schema/json/bundle/analysis.schema.json`. Generated from servtuner commit `d9b231432260`.
 
 ## Top level
 
-| Field                 | Type                                                                   | Required | Description                                                                                    |
-| --------------------- | ---------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------------------- |
-| `analyzer_version`    | `string`                                                               | Yes      |                                                                                                |
-| `hardware_profile_id` | `string`                                                               | No       | The hardware profile the results are scoped to; matches target-snapshot hardware\_profile\_id. |
-| `quality`             | [runQuality](/reference/schemas/analysis/#runquality)                  | Yes      |                                                                                                |
-| `stages`              | array of [stageAggregate](/reference/schemas/analysis/#stageaggregate) | Yes      |                                                                                                |
-| `capacity`            | [capacityModel](/reference/schemas/analysis/#capacitymodel)            | Yes      |                                                                                                |
+| Field                 | Type                                                                   | Required | Description                                                                                                                                                                                                         |
+| --------------------- | ---------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `analyzer_version`    | `string`                                                               | Yes      |                                                                                                                                                                                                                     |
+| `hardware_profile_id` | `string`                                                               | No       | The hardware profile the results are scoped to: hardware\_profile's id.                                                                                                                                             |
+| `hardware_profile`    | [hardwareProfile](/reference/schemas/target-snapshot/#hardwareprofile) | No       | The hardware the results are scoped to: the target's profile from the snapshot, or, for a target outside Kubernetes, one built from the RunSpec's target.hardware (hardware\_source). Absent when neither is known. |
+| `hardware_source`     | `"captured"`, `"declared"`                                             | No       | Where hardware\_profile came from: captured from the Kubernetes nodes the target runs on, or declared in the RunSpec.                                                                                               |
+| `quality`             | [runQuality](/reference/schemas/analysis/#runquality)                  | Yes      |                                                                                                                                                                                                                     |
+| `stages`              | array of [stageAggregate](/reference/schemas/analysis/#stageaggregate) | Yes      |                                                                                                                                                                                                                     |
+| `capacity`            | [capacityModel](/reference/schemas/analysis/#capacitymodel)            | Yes      |                                                                                                                                                                                                                     |
 
 ## Definitions
 
