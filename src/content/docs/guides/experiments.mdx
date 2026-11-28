@@ -47,7 +47,7 @@ The default objective is `slo_rps_per_gpu` for vLLM and SGLang, `slo_rps_per_cor
 
 An experiment may hold vLLM and SGLang runs of the same workload. They compare when they also serve the same model on the same, known hardware (GPU model and count) under the same SLOs: the server then becomes a varied knob, `server`, ranked with intervals like any other. A different model or hardware, or hardware servtuner could not capture, makes the pair not comparable, with the reason.
 
-servtuner reads the hardware from the Kubernetes nodes the target's pods run on, so both runs need `target.workload`; a run with only `target.metrics` has unknown hardware.
+servtuner reads the hardware from the Kubernetes nodes the target's pods run on (`target.workload`). A target outside Kubernetes declares its machine in `target.hardware` (a host fills it in for saved and host targets); without it, its hardware is unknown. Only the GPU model and count must match: drivers, CPUs and hosts may differ, and GPU names match however they are written (`NVIDIA-GeForce-RTX-3070`, `NVIDIA GeForce RTX 3070`).
 
 ## Line runs up without ranking
 
