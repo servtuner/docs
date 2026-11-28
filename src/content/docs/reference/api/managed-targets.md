@@ -1,6 +1,6 @@
 ---
 title: 'Managed targets API'
-description: 'Store, deploy, probe and tear down managed vLLM targets.'
+description: 'Store, deploy, probe and tear down managed server targets.'
 editUrl: false
 tableOfContents:
   maxHeadingLevel: 2
