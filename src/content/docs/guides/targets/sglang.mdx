@@ -53,7 +53,7 @@ prometheus:
     enabled: false
 ```
 
-Declare as knobs only the flags the server was started with. For an SGLang outside Kubernetes, use `target.metrics` instead of `target.workload`; see [off-cluster targets](/deployment/prometheus/#off-cluster-targets). Such a run records no hardware, so it cannot be [compared with vLLM](/guides/experiments/#vllm-or-sglang).
+Declare as knobs only the flags the server was started with. For an SGLang outside Kubernetes, use `target.metrics` instead of `target.workload`; see [off-cluster targets](/deployment/prometheus/#off-cluster-targets). servtuner cannot read its hardware from nodes, so declare its machine in `target.hardware` to [compare it with vLLM](/guides/experiments/#vllm-or-sglang).
 
 SGLang serves TLS (`--ssl-certfile`, `--ssl-keyfile`) but never asks for a client certificate. A RunSpec may still name one in `tls.clientCert`; SGLang ignores it.
 
