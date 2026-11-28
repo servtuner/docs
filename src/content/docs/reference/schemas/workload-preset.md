@@ -8,7 +8,7 @@ editUrl: false
 
 A named, versioned workload with suggested SLOs. Files live in schema/presets/&lt;name&gt;.v&lt;version&gt;.yaml. The workload block is immutable once released (a change is a new version), so a preset name always means one request mix; slos and rps\_hint are suggestions outside the workload hash and may be corrected in place.
 
-Schema file: `schema/json/workload-preset.schema.json`. Generated from servtuner commit `9fbc13619183`.
+Schema file: `schema/json/workload-preset.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
 
 ## Top level
 

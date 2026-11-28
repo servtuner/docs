@@ -8,7 +8,7 @@ editUrl: false
 
 Definitions shared by more than one servtuner schema.
 
-Schema file: `schema/json/common.schema.json`. Generated from servtuner commit `9fbc13619183`.
+Schema file: `schema/json/common.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
 
 ## Definitions
 
@@ -63,7 +63,7 @@ Type: `string` (pattern `^[a-z0-9_]+$`)
 
 A Prometheus query catalog; extra is the RunSpec's extra\_queries.
 
-Type: `"kubernetes"`, `"bifrost"`, `"vllm"`, `"litellm"`, `"dcgm"`, `"extra"`
+Type: `"kubernetes"`, `"bifrost"`, `"vllm"`, `"litellm"`, `"sglang"`, `"dcgm"`, `"extra"`
 
 ### sloName
 

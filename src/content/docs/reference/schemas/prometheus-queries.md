@@ -8,7 +8,7 @@ editUrl: false
 
 prometheus/queries.json: the exact PromQL, step and window of every series, with how each was collected, and each optional catalog's detection result.
 
-Schema file: `schema/json/bundle/prometheus-queries.schema.json`. Generated from servtuner commit `9fbc13619183`.
+Schema file: `schema/json/bundle/prometheus-queries.schema.json`. Generated from servtuner commit `05e04a2ec03f`.
 
 ## Top level
 
